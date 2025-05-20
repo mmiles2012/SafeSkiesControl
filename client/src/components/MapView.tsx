@@ -5,6 +5,8 @@ import MapControls from './MapControls';
 import { detectCollisions, detectAirspaceViolations } from '@/lib/dataIntegration';
 import mapboxgl from 'mapbox-gl';
 import { formatAltitude, formatSpeed, formatHeading } from '@/lib/mapUtils';
+import { MapContext } from '../hooks/useMapContext';
+import ArtccBoundaries from './ArtccBoundaries';
 
 // Initialize Mapbox with token directly for reliability
 mapboxgl.accessToken = "pk.eyJ1IjoibW1pbGVzMjAxMiIsImEiOiJjbWF4MWh2MnowbXhrMmtxODgyNTNpeW1vIn0.3_G3XkF_5nMb62FUZBvjTQ";

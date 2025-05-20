@@ -11,6 +11,7 @@ import { mlService } from "./services/mlService";
 import { notificationService } from "./services/notificationService";
 import { websocketService } from "./services/websocketService";
 import { flightawareService } from "./services/flightawareService";
+import { boundaryService } from "./services/boundaryService";
 
 // Create a validation middleware function
 function validateSchema(schema: z.ZodType<any, any>) {
@@ -464,6 +465,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ARTCC Boundary endpoints
+  router.get("/boundaries", async (req, res) => {
+    try {
+      const facilityIds = boundaryService.getAllFacilityIds();
+      res.json({ facilityIds });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch facility IDs" });
+    }
+  });
+
+  router.get("/boundaries/:facilityId", async (req, res) => {
+    try {
+      const { facilityId } = req.params;
+      const boundaries = boundaryService.getBoundaryData(facilityId.toUpperCase());
+      const geoJSON = boundaryService.convertToGeoJSON(boundaries);
+      res.json(geoJSON);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch boundary data" });
+    }
+  });
+
+  router.get("/boundaries/kansas-city", async (req, res) => {
+    try {
+      const boundaries = boundaryService.getKansasCityBoundary();
+      const geoJSON = boundaryService.convertToGeoJSON(boundaries);
+      res.json(geoJSON);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch Kansas City boundary data" });
+    }
+  });
+
   // Register routes with the main app
   app.use("/api", router);
 
