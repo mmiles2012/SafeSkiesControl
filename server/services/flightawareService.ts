@@ -2,6 +2,7 @@ import axios from 'axios';
 import { InsertAircraft } from '@shared/schema';
 import { storage } from '../storage';
 import { dataSourceService } from './dataSourceService';
+import { aircraftService } from './aircraftService';
 
 // FlightAware AeroAPI base URL and endpoint
 const AEROAPI_BASE_URL = 'https://aeroapi.flightaware.com/aeroapi';
@@ -76,13 +77,9 @@ export class FlightAwareService {
 
   /**
    * Fetch aircraft data from FlightAware AeroAPI
+   * This method fetches live flight data from the AeroAPI
    */
-  async fetchFlights(bounds?: {
-    minLat: number;
-    maxLat: number;
-    minLon: number;
-    maxLon: number;
-  }): Promise<InsertAircraft[]> {
+  private async fetchLiveFlights(): Promise<InsertAircraft[]> {
     if (!this.isConfigured) {
       console.warn('FlightAware API key not configured');
       return [];
@@ -92,27 +89,15 @@ export class FlightAwareService {
       // Update data source status to indicate we're fetching
       if (this.dataSourceId) {
         await storage.updateDataSource(this.dataSourceId, {
-          status: 'online'
+          status: 'fetching'
         });
       }
 
-      // Default to continental US if no bounds provided
-      const searchBounds = bounds || {
-        minLat: 24.396308, // Southern border of US
-        maxLat: 49.384358, // Northern border of US
-        minLon: -125.0, // West coast
-        maxLon: -66.93457, // East coast
-      };
-
-      // Use a simpler query that just gets scheduled flights
-      // This is more likely to work without specialized parameters
-      const queryParams = new URLSearchParams({
-        max_pages: '1'
-      });
-
-      // Make API request
+      console.log('Fetching live flight data from FlightAware AeroAPI...');
+      
+      // Make API request to the scheduled flights endpoint which is more reliable
       const response = await axios.get<FlightAwareResponse>(
-        `${AEROAPI_BASE_URL}${SEARCH_ENDPOINT}?${queryParams.toString()}`,
+        `${AEROAPI_BASE_URL}${SCHEDULED_ENDPOINT}`,
         {
           headers: {
             'x-apikey': this.apiKey
@@ -120,11 +105,16 @@ export class FlightAwareService {
         }
       );
 
-      console.log(`Retrieved ${response.data.flights.length} flights from FlightAware`);
+      console.log(`Retrieved ${response.data.flights?.length || 0} flights from FlightAware`);
+
+      if (!response.data.flights || response.data.flights.length === 0) {
+        console.warn('No flights returned from FlightAware API');
+        return [];
+      }
 
       // Transform FlightAware format to our schema
       const aircraft = this.transformFlights(response.data.flights);
-
+      
       return aircraft;
     } catch (error) {
       console.error('Error fetching flights from FlightAware:', error);
@@ -138,6 +128,19 @@ export class FlightAwareService {
       
       return [];
     }
+  }
+
+  /**
+   * Fetch aircraft data from FlightAware AeroAPI
+   */
+  async fetchFlights(bounds?: {
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+  }): Promise<InsertAircraft[]> {
+    // Try to use the live flights endpoint
+    return this.fetchLiveFlights();
   }
 
   /**
@@ -172,12 +175,9 @@ export class FlightAwareService {
    */
   async syncFlights() {
     try {
-      // If no API key is configured or there's an issue, use sample data
+      // If no API key is configured, log a warning and return
       if (!this.isConfigured) {
-        console.warn('FlightAware API key not configured. Using sample aircraft data.');
-        
-        // Generate sample aircraft using the service
-        const sampleFlights = await aircraftService.generateSampleAircraft(10);
+        console.warn('FlightAware API key not configured.');
         
         // Update data source status
         if (this.dataSourceId) {
@@ -186,16 +186,14 @@ export class FlightAwareService {
           });
         }
         
-        return sampleFlights.length;
+        return 0;
       }
 
       // Try to fetch flights from FlightAware
       const flights = await this.fetchFlights();
       
-      // If we didn't get any flights, fall back to sample data
       if (flights.length === 0) {
-        console.log('No flights received from FlightAware API. Using sample aircraft data.');
-        const sampleFlights = await aircraftService.generateSampleAircraft(10);
+        console.log('No flights received from FlightAware API.');
         
         // Update data source status to indicate degraded service
         if (this.dataSourceId) {
@@ -204,11 +202,12 @@ export class FlightAwareService {
           });
         }
         
-        return sampleFlights.length;
+        return 0;
       }
 
-      // If we got here, we have some real flights data
-      // Delete existing aircraft and replace with new real data
+      console.log(`Successfully fetched ${flights.length} flights from FlightAware`);
+
+      // Clear existing aircraft and add the new ones
       const existingAircraft = await storage.getAllAircraft();
       for (const aircraft of existingAircraft) {
         await storage.deleteAircraft(aircraft.id);
@@ -219,12 +218,13 @@ export class FlightAwareService {
         await storage.createAircraft(flight);
       }
 
-      console.log(`Synced ${flights.length} flights from FlightAware`);
+      console.log(`Synced ${flights.length} flights from FlightAware to the database`);
       
       // Update data source status to show success
       if (this.dataSourceId) {
         await storage.updateDataSource(this.dataSourceId, {
-          status: 'online'
+          status: 'online',
+          lastUpdated: new Date()
         });
       }
 
@@ -237,10 +237,6 @@ export class FlightAwareService {
     } catch (error) {
       console.error('Error syncing flights from FlightAware:', error);
       
-      // On error, fall back to sample data
-      console.log('Error connecting to FlightAware. Using sample aircraft data instead.');
-      const sampleFlights = await aircraftService.generateSampleAircraft(10);
-      
       // Update data source status to indicate error
       if (this.dataSourceId) {
         await storage.updateDataSource(this.dataSourceId, {
@@ -248,7 +244,7 @@ export class FlightAwareService {
         });
       }
       
-      return sampleFlights.length;
+      return 0;
     }
   }
 }

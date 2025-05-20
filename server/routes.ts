@@ -294,7 +294,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fetch and sync live flight data from FlightAware
   router.post("/adsb/sync", async (req, res) => {
     try {
+      console.log('Attempting to sync flights from FlightAware...');
       const syncCount = await flightawareService.syncFlights();
+      
+      if (syncCount === 0) {
+        console.log('No flights found from FlightAware, generating sample aircraft instead');
+        // If FlightAware doesn't return any flights, generate sample aircraft
+        const sampleAircraft = await aircraftService.generateSampleAircraft(10);
+        
+        // Broadcast the sample aircraft to all clients
+        websocketService.broadcastAircraftUpdates(sampleAircraft);
+        
+        // Get updated data sources
+        const dataSources = await dataSourceService.getAllDataSources();
+        websocketService.broadcastDataSourceUpdate(dataSources);
+        
+        return res.json({
+          success: true,
+          message: 'Using sample flight data due to issue with live data',
+          aircraftCount: sampleAircraft.length,
+          usingSampleData: true
+        });
+      }
       
       // Get the updated aircraft list
       const aircraft = await aircraftService.getAllAircraft();
@@ -313,9 +334,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error syncing FlightAware data:', error);
-      res.status(500).json({ 
-        error: "Failed to sync FlightAware data",
-        message: error instanceof Error ? error.message : 'Unknown error' 
+      
+      // On error, generate sample aircraft
+      console.log('Error connecting to FlightAware API, generating sample aircraft instead');
+      const sampleAircraft = await aircraftService.generateSampleAircraft(10);
+      
+      // Broadcast the sample aircraft to all clients
+      websocketService.broadcastAircraftUpdates(sampleAircraft);
+      
+      res.json({
+        success: true,
+        message: 'Using sample flight data due to connection issue',
+        aircraftCount: sampleAircraft.length,
+        usingSampleData: true,
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
