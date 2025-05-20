@@ -19,6 +19,8 @@ export interface Aircraft {
   verifiedSources: VerificationSource[];
   controllerSectorId?: number;
   needsAssistance: boolean;
+  flightPlan: 'VFR' | 'IFR';
+  nextWaypoint?: string;
 }
 
 export interface AircraftFilters {
