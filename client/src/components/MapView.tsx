@@ -4,6 +4,8 @@ import { useMapControls } from '@/hooks/useMapControls';
 import { useQuery } from '@tanstack/react-query';
 import MapControls from './MapControls';
 import { detectCollisions, detectAirspaceViolations } from '@/lib/dataIntegration';
+import mapboxgl from 'mapbox-gl';
+import { formatAltitude, formatSpeed, formatHeading } from '@/lib/mapUtils';
 
 interface MapViewProps {
   aircraft: Aircraft[];
@@ -187,15 +189,15 @@ const MapView: React.FC<MapViewProps> = ({
           <div className="grid grid-cols-3 gap-2 text-sm mb-3">
             <div>
               <div className="text-text-secondary">Altitude</div>
-              <div className="font-mono">{formatAltitude(selectedAircraft.altitude)}</div>
+              <div className="font-mono">{selectedAircraft.altitude.toLocaleString()} ft</div>
             </div>
             <div>
               <div className="text-text-secondary">Speed</div>
-              <div className="font-mono">{formatSpeed(selectedAircraft.speed)}</div>
+              <div className="font-mono">{selectedAircraft.speed} kts</div>
             </div>
             <div>
               <div className="text-text-secondary">Heading</div>
-              <div className="font-mono">{formatHeading(selectedAircraft.heading)}</div>
+              <div className="font-mono">{selectedAircraft.heading}°</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm">

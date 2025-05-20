@@ -3,6 +3,8 @@
 import { Aircraft, Restriction, Sector } from "../types/aircraft";
 import mapboxgl from "mapbox-gl";
 
+// Display formatting functions are already declared elsewhere in this file
+
 // Convert degrees to radians
 export function degToRad(degrees: number): number {
   return degrees * (Math.PI / 180);
