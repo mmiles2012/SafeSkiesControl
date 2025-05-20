@@ -101,17 +101,26 @@ const MapView: React.FC<MapViewProps> = ({
   
   // Update restrictions whenever they change
   useEffect(() => {
-    if (restrictions.length > 0) {
+    if (restrictions && restrictions.length > 0) {
       updateRestrictions(restrictions);
+      console.log("Updated restrictions on map:", restrictions.length);
     }
   }, [restrictions, updateRestrictions]);
   
   // Update sectors whenever they change
   useEffect(() => {
-    if (sectors.length > 0) {
+    if (sectors && sectors.length > 0) {
       updateSectors(sectors);
+      console.log("Updated sectors on map:", sectors.length);
     }
   }, [sectors, updateSectors]);
+  
+  // Focus on selected aircraft when it changes
+  useEffect(() => {
+    if (selectedAircraft) {
+      focusOnAircraft(selectedAircraft);
+    }
+  }, [selectedAircraft?.id]);
   
   // Focus on selected aircraft
   useEffect(() => {

@@ -5,8 +5,8 @@ import mapboxgl from "mapbox-gl";
 import { Aircraft, MapSettings, Restriction, Sector } from "../types/aircraft";
 import { getVerificationStatusColor, calculateFlightPath } from "../lib/mapUtils";
 
-// Initialize Mapbox GL with the provided access token
-mapboxgl.accessToken = "pk.eyJ1IjoibW1pbGVzMjAxMiIsImEiOiJjbWF4MWh2MnowbXhrMmtxODgyNTNpeW1vIn0.3_G3XkF_5nMb62FUZBvjTQ";
+// Initialize Mapbox GL with the environment token
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || "pk.eyJ1IjoibW1pbGVzMjAxMiIsImEiOiJjbWF4MWh2MnowbXhrMmtxODgyNTNpeW1vIn0.3_G3XkF_5nMb62FUZBvjTQ";
 
 export function useMapControls() {
   const mapContainer = useRef<HTMLDivElement | null>(null);
@@ -36,8 +36,8 @@ export function useMapControls() {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: document.documentElement.classList.contains('dark') 
-          ? 'mapbox://styles/mapbox/dark-v10'
-          : 'mapbox://styles/mapbox/light-v10',
+          ? 'mapbox://styles/mapbox/navigation-night-v1'
+          : 'mapbox://styles/mapbox/navigation-day-v1',
         center: [-98.5795, 39.8283], // Center of US
         zoom: 4
       });
@@ -45,31 +45,35 @@ export function useMapControls() {
       map.current.on('load', () => {
         setMapLoaded(true);
         
-        // Add grid lines source
-        map.current?.addSource('grid-lines', {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: []
-          }
-        });
-        
-        // Add grid lines layer
-        map.current?.addLayer({
-          id: 'grid-lines',
-          type: 'line',
-          source: 'grid-lines',
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-            'visibility': 'visible'
-          },
-          paint: {
-            'line-color': '#2D2D2D',
-            'line-width': 1,
-            'line-opacity': 0.5
-          }
-        });
+        try {
+          // Add grid lines source
+          map.current?.addSource('grid-lines', {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: []
+            }
+          });
+          
+          // Add grid lines layer
+          map.current?.addLayer({
+            id: 'grid-lines',
+            type: 'line',
+            source: 'grid-lines',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+              'visibility': 'visible'
+            },
+            paint: {
+              'line-color': document.documentElement.classList.contains('dark') ? '#2D2D2D' : '#888888',
+              'line-width': 1,
+              'line-opacity': 0.5
+            }
+          });
+        } catch (error) {
+          console.error('Error adding grid lines:', error);
+        }
         
         // Add flight paths source
         map.current?.addSource('flight-paths', {
