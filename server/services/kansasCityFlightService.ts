@@ -79,8 +79,9 @@ export class KansasCityFlightService {
       origin,
       destination,
       verificationStatus,
-
-      lastUpdated: new Date(),
+      squawk: Math.floor(Math.random() * 7777).toString().padStart(4, '0'),
+      verifiedSources: verificationStatus === 'verified' ? ['ADS-B', 'radar'] : 
+                      verificationStatus === 'partially_verified' ? ['ADS-B'] : [],
       controllerSectorId: null,
       needsAssistance: Math.random() < 0.05 // 5% chance of needing assistance
     };

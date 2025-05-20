@@ -185,6 +185,25 @@ const Header: React.FC<HeaderProps> = ({
               </svg>
               Live Data
             </button>
+            <button 
+              onClick={generateKansasCityFlights}
+              disabled={isGeneratingKCFlights}
+              className="px-3 py-1.5 rounded-md bg-amber-600 text-white hover:bg-amber-700 text-sm font-medium transition-colors flex items-center">
+              {isGeneratingKCFlights ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                    <path d="M12 1v22"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                  KC Flights
+                </>
+              )}
+            </button>
           </div>
         </div>
         <div className="flex items-center space-x-4">
