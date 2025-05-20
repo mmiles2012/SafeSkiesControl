@@ -197,7 +197,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
         )}
       </div>
 
-      <div className="p-3 border-t border-border bg-muted/50">
+      <div className="sticky bottom-0 p-3 border-t border-border bg-muted/50">
         <h3 className="text-sm font-medium mb-3">System Status</h3>
         <div className="space-y-2">
           {dataSources.map(source => (
