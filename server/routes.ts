@@ -12,6 +12,7 @@ import { notificationService } from "./services/notificationService";
 import { websocketService } from "./services/websocketService";
 import { flightawareService } from "./services/flightawareService";
 import { boundaryService } from "./services/boundaryService";
+import { kansasCityFlightService } from "./services/kansasCityFlightService";
 
 // Create a validation middleware function
 function validateSchema(schema: z.ZodType<any, any>) {
@@ -493,6 +494,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(geoJSON);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch Kansas City boundary data" });
+    }
+  });
+  
+  // Generate Kansas City flights
+  router.post("/kcflights/generate", async (req, res) => {
+    try {
+      const count = req.query.count ? parseInt(req.query.count as string) : 20;
+      await kansasCityFlightService.generateSampleAircraft(count);
+      res.json({ 
+        success: true, 
+        message: `Generated ${count} aircraft in Kansas City ARTCC area` 
+      });
+    } catch (error) {
+      console.error("Error generating KC flights:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to generate Kansas City flights" 
+      });
     }
   });
 

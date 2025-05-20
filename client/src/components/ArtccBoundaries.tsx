@@ -47,7 +47,28 @@ const ArtccBoundaries: React.FC<BoundaryProps> = ({
           data: geoJSON
         });
         
-        // Add the layer to display the boundaries
+        // Add gray background for areas outside the boundary
+        map.addLayer({
+          id: 'outside-boundary',
+          type: 'background',
+          paint: {
+            'background-color': 'rgba(200, 200, 200, 0.7)'
+          }
+        });
+        
+        // Add the fill layer for the boundaries
+        map.addLayer({
+          id: 'artcc-boundaries-fill',
+          type: 'fill',
+          source: 'artcc-boundaries',
+          layout: {},
+          paint: {
+            'fill-color': '#ffffff',
+            'fill-opacity': 1
+          }
+        });
+        
+        // Add the line layer to display the boundaries
         map.addLayer({
           id: 'artcc-boundaries',
           type: 'line',
@@ -58,20 +79,8 @@ const ArtccBoundaries: React.FC<BoundaryProps> = ({
           },
           paint: {
             'line-color': '#ff9900',
-            'line-width': 2,
-            'line-opacity': 0.8
-          }
-        });
-        
-        // Add a fill layer for the boundaries
-        map.addLayer({
-          id: 'artcc-boundaries-fill',
-          type: 'fill',
-          source: 'artcc-boundaries',
-          layout: {},
-          paint: {
-            'fill-color': '#ff9900',
-            'fill-opacity': 0.1
+            'line-width': 3,
+            'line-opacity': 1
           }
         });
         

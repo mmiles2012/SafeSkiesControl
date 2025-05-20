@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DataSource } from '../types/aircraft';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Dialog, 
   DialogContent,
@@ -35,6 +36,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showLiveDataDialog, setShowLiveDataDialog] = useState(false);
   const [isFetchingLiveData, setIsFetchingLiveData] = useState(false);
+  const [isGeneratingKCFlights, setIsGeneratingKCFlights] = useState(false);
   const [syncResult, setSyncResult] = useState<{
     success: boolean;
     message: string;
@@ -42,6 +44,7 @@ const Header: React.FC<HeaderProps> = ({
   } | null>(null);
   
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Function to fetch live flight data from FlightAware
   const fetchLiveFlightData = async () => {
@@ -80,6 +83,40 @@ const Header: React.FC<HeaderProps> = ({
       }
     } finally {
       setIsFetchingLiveData(false);
+    }
+  };
+  
+  // Function to generate Kansas City flights
+  const generateKansasCityFlights = async () => {
+    try {
+      setIsGeneratingKCFlights(true);
+      
+      const response = await axios.post('/api/kcflights/generate');
+      
+      if (response.data.success) {
+        queryClient.invalidateQueries({ queryKey: ['/api/aircraft'] });
+        
+        toast({
+          title: "Kansas City Flights Generated",
+          description: "Created sample aircraft within Kansas City ARTCC boundary.",
+        });
+      } else {
+        toast({
+          title: "Generation Failed",
+          description: "Could not generate Kansas City flights. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating KC flights:', error);
+      
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate Kansas City flights. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingKCFlights(false);
     }
   };
   
