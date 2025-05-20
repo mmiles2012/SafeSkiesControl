@@ -35,7 +35,9 @@ export function useMapControls() {
     if (!map.current) {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/dark-v10',
+        style: document.documentElement.classList.contains('dark') 
+          ? 'mapbox://styles/mapbox/dark-v10'
+          : 'mapbox://styles/mapbox/light-v10',
         center: [-98.5795, 39.8283], // Center of US
         zoom: 4
       });

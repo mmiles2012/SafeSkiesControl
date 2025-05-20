@@ -10,11 +10,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Aircraft, DataSource } from '@/types/aircraft';
 import FilterDialog from '@/components/FilterDialog';
 import MapSettings from '@/components/MapSettings';
+import { useParams, useLocation } from 'wouter';
 
 const Dashboard = () => {
   const [showAircraftDetail, setShowAircraftDetail] = useState(false);
   const [showMapSettings, setShowMapSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const params = useParams<{ id: string }>();
+  const [_, navigate] = useLocation();
   
   // Get aircraft data
   const {
@@ -56,12 +59,25 @@ const Dashboard = () => {
   const handleSelectAircraft = (aircraft: Aircraft) => {
     selectAircraft(aircraft);
     setShowAircraftDetail(true);
+    navigate(`/aircraft/${aircraft.id}`);
   };
   
   // Handle aircraft detail modal close
   const handleCloseAircraftDetail = () => {
     setShowAircraftDetail(false);
   };
+
+  // Check for aircraft ID in URL and select that aircraft
+  useEffect(() => {
+    if (params && params.id && aircraft.length > 0) {
+      const aircraftId = parseInt(params.id);
+      const selectedAc = aircraft.find(a => a.id === aircraftId);
+      if (selectedAc) {
+        selectAircraft(selectedAc);
+        setShowAircraftDetail(true);
+      }
+    }
+  }, [params, aircraft, selectAircraft]);
 
   // Generate sample data on first load
   useEffect(() => {
