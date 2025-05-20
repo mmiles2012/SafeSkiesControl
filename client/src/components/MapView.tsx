@@ -202,11 +202,11 @@ const MapView: React.FC<MapViewProps> = ({
   }, [selectedAircraft, mapLoaded]);
 
   return (
-    <section className="w-[65%] h-full relative">
+    <section className="w-[65%] h-screen relative">
       <div 
         ref={mapContainerRef} 
         className="absolute inset-0 bg-muted/50 rounded-lg overflow-hidden"
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: 'calc(100vh - 2rem)' }}
       ></div>
       
       <MapControls 
