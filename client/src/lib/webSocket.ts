@@ -65,7 +65,7 @@ class WebSocketClient {
   
   // Check if the WebSocket is connected
   isConnected() {
-    return this.isConnected;
+    return this._isConnected;
   }
   
   // Subscribe to a specific message type
@@ -77,7 +77,7 @@ class WebSocketClient {
     this.messageHandlers.get(type)!.push(handler as MessageHandler);
     
     // If we're already connected, send a subscribe message
-    if (this.isConnected) {
+    if (this._isConnected) {
       this.send('subscribe', { channel: type });
     }
     
@@ -137,7 +137,7 @@ class WebSocketClient {
       this.reconnectTimer = null;
     }
     
-    this.isConnected = false;
+    this._isConnected = false;
   }
   
   // Subscribe to aircraft updates
