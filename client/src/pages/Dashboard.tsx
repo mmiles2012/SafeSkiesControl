@@ -65,8 +65,18 @@ const Dashboard = () => {
 
   // Generate sample data on first load
   useEffect(() => {
+    const createSampleData = async () => {
+      try {
+        console.log("Generating sample aircraft data");
+        await generateSampleData();
+        console.log("Sample data generated");
+      } catch (error) {
+        console.error("Error generating sample data:", error);
+      }
+    };
+    
     if (!aircraftLoading && aircraft.length === 0) {
-      generateSampleData();
+      createSampleData();
     }
   }, [aircraftLoading, aircraft.length, generateSampleData]);
 

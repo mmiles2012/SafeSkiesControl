@@ -8,7 +8,7 @@ class WebSocketClient {
   private socket: WebSocket | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private messageHandlers: Map<string, MessageHandler[]> = new Map();
-  private isConnected = false;
+  private _isConnected = false;
   
   // Initialize the WebSocket connection
   connect() {
@@ -16,14 +16,17 @@ class WebSocketClient {
       return;
     }
     
+    // Create WebSocket with correct URL format for Replit
+    const host = window.location.host;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${host}/ws`;
     
+    console.log("Connecting to WebSocket at:", wsUrl);
     this.socket = new WebSocket(wsUrl);
     
     this.socket.onopen = () => {
       console.log("WebSocket connected");
-      this.isConnected = true;
+      this._isConnected = true;
       
       // Clear any reconnect timer
       if (this.reconnectTimer) {
@@ -46,7 +49,7 @@ class WebSocketClient {
     
     this.socket.onclose = () => {
       console.log("WebSocket disconnected");
-      this.isConnected = false;
+      this._isConnected = false;
       this.socket = null;
       
       // Attempt to reconnect after 3 seconds
