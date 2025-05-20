@@ -10,6 +10,7 @@ import { dataSourceService } from "./services/dataSourceService";
 import { mlService } from "./services/mlService";
 import { notificationService } from "./services/notificationService";
 import { websocketService } from "./services/websocketService";
+import { flightawareService } from "./services/flightawareService";
 
 // Create a validation middleware function
 function validateSchema(schema: z.ZodType<any, any>) {
@@ -283,6 +284,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(results);
     } catch (error) {
       res.status(500).json({ error: "Failed to check data sources" });
+    }
+  });
+  
+  // ------------------------
+  // FlightAware ADS-B data endpoints
+  // ------------------------
+  
+  // Fetch and sync live flight data from FlightAware
+  router.post("/adsb/sync", async (req, res) => {
+    try {
+      const syncCount = await flightawareService.syncFlights();
+      
+      // Get the updated aircraft list
+      const aircraft = await aircraftService.getAllAircraft();
+      
+      // Broadcast the updated aircraft to all clients
+      websocketService.broadcastAircraftUpdates(aircraft);
+      
+      // Get updated data sources
+      const dataSources = await dataSourceService.getAllDataSources();
+      websocketService.broadcastDataSourceUpdate(dataSources);
+      
+      res.json({ 
+        success: true, 
+        message: `Synced ${syncCount} flights from FlightAware ADS-B`,
+        aircraftCount: aircraft.length
+      });
+    } catch (error) {
+      console.error('Error syncing FlightAware data:', error);
+      res.status(500).json({ 
+        error: "Failed to sync FlightAware data",
+        message: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+  
+  // Fetch flight data from FlightAware for a specific region
+  router.post("/adsb/fetch-region", async (req, res) => {
+    try {
+      const { minLat, maxLat, minLon, maxLon } = req.body;
+      
+      if (!minLat || !maxLat || !minLon || !maxLon) {
+        return res.status(400).json({ 
+          error: "Missing coordinates",
+          message: "Please provide minLat, maxLat, minLon, and maxLon coordinates"
+        });
+      }
+      
+      const flights = await flightawareService.fetchFlights({
+        minLat: parseFloat(minLat),
+        maxLat: parseFloat(maxLat),
+        minLon: parseFloat(minLon),
+        maxLon: parseFloat(maxLon)
+      });
+      
+      res.json({
+        success: true,
+        count: flights.length,
+        flights
+      });
+    } catch (error) {
+      console.error('Error fetching FlightAware data for region:', error);
+      res.status(500).json({ 
+        error: "Failed to fetch FlightAware data for region",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
   
