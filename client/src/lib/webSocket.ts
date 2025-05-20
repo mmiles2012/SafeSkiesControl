@@ -7,6 +7,7 @@ type MessageHandler = (data: any) => void;
 class WebSocketClient {
   private socket: WebSocket | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private pingInterval: NodeJS.Timeout | null = null;
   private messageHandlers: Map<string, MessageHandler[]> = new Map();
   private _isConnected = false;
   
@@ -16,58 +17,72 @@ class WebSocketClient {
       return;
     }
     
-    // Create WebSocket with correct URL format for Replit
-    const host = window.location.host;
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${host}/ws`;
-    
-    console.log("Connecting to WebSocket at:", wsUrl);
-    this.socket = new WebSocket(wsUrl);
-    
-    this.socket.onopen = () => {
-      console.log("WebSocket connected");
-      this._isConnected = true;
+    try {
+      // Create WebSocket with correct URL format for Replit
+      const host = window.location.host;
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${host}/ws`;
       
-      // Clear any reconnect timer
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
+      console.log("Connecting to WebSocket at:", wsUrl);
+      this.socket = new WebSocket(wsUrl);
       
-      // Send a ping to the server
-      this.send('ping', {});
-      
-      // Send a ping every 30 seconds to keep the connection alive
-      setInterval(() => {
-        if (this._isConnected) {
-          this.send('ping', {});
+      this.socket.onopen = () => {
+        console.log("WebSocket connected");
+        this._isConnected = true;
+        
+        // Clear any reconnect timer
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = null;
         }
-      }, 30000);
-    };
-    
-    this.socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        this.handleMessage(message);
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
-      }
-    };
-    
-    this.socket.onclose = () => {
-      console.log("WebSocket disconnected");
-      this._isConnected = false;
-      this.socket = null;
+        
+        // Send a ping to the server
+        this.send('ping', {});
+        
+        // Send a ping every 30 seconds to keep the connection alive
+        this.pingInterval = setInterval(() => {
+          if (this._isConnected) {
+            this.send('ping', {});
+          }
+        }, 30000);
+      };
       
-      // Attempt to reconnect after 3 seconds
+      this.socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          this.handleMessage(message);
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+      
+      this.socket.onclose = () => {
+        console.log("WebSocket disconnected");
+        this._isConnected = false;
+        this.socket = null;
+        
+        // Clear ping interval
+        if (this.pingInterval) {
+          clearInterval(this.pingInterval);
+          this.pingInterval = null;
+        }
+        
+        // Attempt to reconnect after 3 seconds
+        this.reconnectTimer = setTimeout(() => {
+          this.connect();
+        }, 3000);
+      };
+      
+      this.socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+    } catch (error) {
+      console.error("Error creating WebSocket:", error);
+      // Try reconnecting after error
       this.reconnectTimer = setTimeout(() => {
         this.connect();
-      }, 3000);
-    };
-    
-    this.socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+      }, 5000);
+    }
   }
   
   // Check if the WebSocket is connected
@@ -142,6 +157,11 @@ class WebSocketClient {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+    }
+    
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
     }
     
     this._isConnected = false;
