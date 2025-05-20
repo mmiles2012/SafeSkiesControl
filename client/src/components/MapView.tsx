@@ -1,11 +1,13 @@
 import { useRef, useEffect, useState } from 'react';
 import { Aircraft, DataSource, MapSettings, Restriction, Sector } from '@/types/aircraft';
-import { useMapControls } from '@/hooks/useMapControls';
 import { useQuery } from '@tanstack/react-query';
 import MapControls from './MapControls';
 import { detectCollisions, detectAirspaceViolations } from '@/lib/dataIntegration';
 import mapboxgl from 'mapbox-gl';
 import { formatAltitude, formatSpeed, formatHeading } from '@/lib/mapUtils';
+
+// Initialize Mapbox with token directly for reliability
+mapboxgl.accessToken = "pk.eyJ1IjoibW1pbGVzMjAxMiIsImEiOiJjbWF4MWh2MnowbXhrMmtxODgyNTNpeW1vIn0.3_G3XkF_5nMb62FUZBvjTQ";
 
 interface MapViewProps {
   aircraft: Aircraft[];
@@ -20,16 +22,18 @@ const MapView: React.FC<MapViewProps> = ({
   onSelectAircraft,
   dataSources
 }) => {
-  const {
-    mapContainer,
-    mapSettings,
-    updateMapSettings,
-    updateAircraftMarkers,
-    updateRestrictions,
-    updateSectors,
-    focusOnAircraft,
-    resetMapView
-  } = useMapControls();
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  
+  const [mapSettings, setMapSettings] = useState<MapSettings>({
+    showGrid: true,
+    showRestrictions: true,
+    showSectors: true,
+    showVerifiedOnly: false,
+    showLabels: true,
+    showFlightPaths: true
+  });
 
   // Fetch restrictions
   const { data: restrictions = [] } = useQuery<Restriction[]>({
@@ -49,12 +53,48 @@ const MapView: React.FC<MapViewProps> = ({
     partiallyVerified: aircraft.filter(a => a.verificationStatus === 'partially_verified').length,
     unverified: aircraft.filter(a => a.verificationStatus === 'unverified').length,
   };
+
+  // Initialize map on component mount
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    
+    // Initialize map only once
+    if (!mapRef.current) {
+      console.log('Initializing map...');
+      
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/mapbox/navigation-day-v1',
+        center: [-98.5795, 39.8283], // Center of US
+        zoom: 4,
+        attributionControl: false
+      });
+      
+      map.on('load', () => {
+        console.log('Map loaded successfully!');
+        setMapLoaded(true);
+        mapRef.current = map;
+      });
+      
+      map.on('error', (e) => {
+        console.error('Map error:', e);
+      });
+    }
+    
+    // Cleanup function
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
   
   // Run periodic collision detection
   useEffect(() => {
     const checkCollisions = async () => {
       try {
-        await detectCollisions();
+        await detectCollisions(aircraft);
       } catch (error) {
         console.error('Error detecting collisions:', error);
       }
@@ -69,13 +109,13 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       clearInterval(collisionInterval);
     };
-  }, []);
+  }, [aircraft]);
   
   // Run periodic airspace violation detection
   useEffect(() => {
     const checkAirspaceViolations = async () => {
       try {
-        await detectAirspaceViolations();
+        await detectAirspaceViolations(aircraft);
       } catch (error) {
         console.error('Error detecting airspace violations:', error);
       }
@@ -90,75 +130,113 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       clearInterval(violationInterval);
     };
-  }, []);
+  }, [aircraft]);
 
-  // Update map markers whenever aircraft data changes
+  // Update markers when aircraft data changes
   useEffect(() => {
-    if (aircraft.length > 0) {
-      updateAircraftMarkers(aircraft);
-    }
-  }, [aircraft, updateAircraftMarkers]);
-  
-  // Update restrictions whenever they change
-  useEffect(() => {
-    if (restrictions && restrictions.length > 0) {
-      updateRestrictions(restrictions);
-      console.log("Updated restrictions on map:", restrictions.length);
-    }
-  }, [restrictions, updateRestrictions]);
-  
-  // Update sectors whenever they change
-  useEffect(() => {
-    if (sectors && sectors.length > 0) {
-      updateSectors(sectors);
-      console.log("Updated sectors on map:", sectors.length);
-    }
-  }, [sectors, updateSectors]);
-  
-  // Focus on selected aircraft when it changes
-  useEffect(() => {
-    if (selectedAircraft) {
-      focusOnAircraft(selectedAircraft);
-    }
-  }, [selectedAircraft?.id]);
+    if (!mapLoaded || !mapRef.current || aircraft.length === 0) return;
+    
+    console.log('Updating aircraft markers');
+    
+    // Remove existing markers
+    const markers = document.querySelectorAll('.mapboxgl-marker');
+    markers.forEach(marker => marker.remove());
+    
+    // Add new markers
+    aircraft.forEach(a => {
+      const el = document.createElement('div');
+      el.className = 'aircraft-marker';
+      el.style.transform = `rotate(${a.heading}deg)`;
+      
+      // Set color based on verification status
+      if (a.verificationStatus === 'verified') {
+        el.style.backgroundColor = 'hsl(var(--verified))';
+      } else if (a.verificationStatus === 'partially_verified') {
+        el.style.backgroundColor = 'hsl(var(--partially-verified))';
+      } else {
+        el.style.backgroundColor = 'hsl(var(--unverified))';
+      }
+      
+      // Add pulsing effect for aircraft needing assistance
+      if (a.needsAssistance) {
+        el.classList.add('pulse');
+      }
+      
+      // Create popup with basic info
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        className: 'aircraft-popup'
+      }).setHTML(`
+        <div class="px-2 py-1 text-xs font-medium">
+          <div class="font-bold">${a.callsign}</div>
+          <div>${a.aircraftType}</div>
+          <div>${formatAltitude(a.altitude)}</div>
+        </div>
+      `);
+      
+      // Add marker to map
+      new mapboxgl.Marker(el)
+        .setLngLat([a.longitude, a.latitude])
+        .setPopup(popup)
+        .addTo(mapRef.current!);
+        
+      // Add click handler to select aircraft
+      el.addEventListener('click', () => {
+        onSelectAircraft(a);
+      });
+    });
+  }, [aircraft, mapLoaded, onSelectAircraft]);
   
   // Focus on selected aircraft
   useEffect(() => {
-    if (selectedAircraft) {
-      focusOnAircraft(selectedAircraft);
-    }
-  }, [selectedAircraft, focusOnAircraft]);
+    if (!mapLoaded || !mapRef.current || !selectedAircraft) return;
+    
+    mapRef.current.flyTo({
+      center: [selectedAircraft.longitude, selectedAircraft.latitude],
+      zoom: 9,
+      speed: 1.5,
+      curve: 1.5,
+      essential: true
+    });
+  }, [selectedAircraft, mapLoaded]);
 
   return (
     <section className="w-[65%] h-full relative">
       <div 
-        ref={mapContainer} 
-        className="absolute inset-0 bg-muted/50 rounded-lg"
-        style={{ height: '100%', width: '100%' }}
+        ref={mapContainerRef} 
+        className="absolute inset-0 bg-muted/50 rounded-lg overflow-hidden"
+        style={{ width: '100%', height: '100%' }}
       ></div>
       
       <MapControls 
-        onZoomIn={() => {/* Implemented in useMapControls */}}
-        onZoomOut={() => {/* Implemented in useMapControls */}}
-        onResetView={resetMapView}
-        onToggleLayers={() => {/* This will be handled by MapSettings dialog */}}
+        onZoomIn={() => mapRef.current?.zoomIn()}
+        onZoomOut={() => mapRef.current?.zoomOut()}
+        onResetView={() => {
+          mapRef.current?.flyTo({
+            center: [-98.5795, 39.8283],
+            zoom: 4,
+            speed: 1.5
+          });
+        }}
+        onToggleLayers={() => {/* Toggle layers will be implemented later */}}
         settings={mapSettings}
-        onUpdateSettings={updateMapSettings}
+        onUpdateSettings={setMapSettings}
       />
 
-      <div className="absolute left-4 top-4 bg-surface p-2 rounded shadow-md">
+      <div className="absolute left-4 top-4 bg-background/90 dark:bg-card/90 p-2 rounded-lg shadow-md border border-border">
         <div className="flex items-center space-x-4 text-sm">
           <div className="flex items-center">
-            <div className="status-indicator bg-success mr-1"></div>
-            <span>Verified ({verificationCounts.verified})</span>
+            <span className="inline-block w-3 h-3 rounded-full bg-[hsl(var(--verified))] mr-1.5"></span>
+            <span>Verified: {verificationCounts.verified}</span>
           </div>
           <div className="flex items-center">
-            <div className="status-indicator bg-warning mr-1"></div>
-            <span>Single Source ({verificationCounts.partiallyVerified})</span>
+            <span className="inline-block w-3 h-3 rounded-full bg-[hsl(var(--partially-verified))] mr-1.5"></span>
+            <span>Partial: {verificationCounts.partiallyVerified}</span>
           </div>
           <div className="flex items-center">
-            <div className="status-indicator bg-danger mr-1"></div>
-            <span>Unverified ({verificationCounts.unverified})</span>
+            <span className="inline-block w-3 h-3 rounded-full bg-[hsl(var(--unverified))] mr-1.5"></span>
+            <span>Unverified: {verificationCounts.unverified}</span>
           </div>
         </div>
       </div>
