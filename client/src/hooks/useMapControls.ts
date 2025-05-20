@@ -6,8 +6,8 @@ import { Aircraft, MapSettings, Restriction, Sector } from "../types/aircraft";
 import { getVerificationStatusColor, calculateFlightPath } from "../lib/mapUtils";
 
 // Initialize Mapbox GL with the access token from environment variables
-// Using a default token that's also in the .env file as backup
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || "pk.eyJ1IjoibW1pbGVzMjAxMiIsImEiOiJjbWF4MWh2MnowbXhrMmtxODgyNTNpeW1vIn0.3_G3XkF_5nMb62FUZBvjTQ";
+// Using a direct token until environment variables are correctly set up
+mapboxgl.accessToken = "pk.eyJ1IjoibW1pbGVzMjAxMiIsImEiOiJjbWF4MWh2MnowbXhrMmtxODgyNTNpeW1vIn0.3_G3XkF_5nMb62FUZBvjTQ";
 
 export function useMapControls() {
   const mapContainer = useRef<HTMLDivElement | null>(null);

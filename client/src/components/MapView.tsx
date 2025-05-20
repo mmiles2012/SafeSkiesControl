@@ -130,10 +130,12 @@ const MapView: React.FC<MapViewProps> = ({
   }, [selectedAircraft, focusOnAircraft]);
 
   return (
-    <section className="w-[65%] relative">
-      <div ref={mapContainer} className="absolute inset-0 bg-surface-light">
-        {/* Map container - Mapbox GL will render here */}
-      </div>
+    <section className="w-[65%] h-full relative">
+      <div 
+        ref={mapContainer} 
+        className="absolute inset-0 bg-muted/50 rounded-lg"
+        style={{ height: '100%', width: '100%' }}
+      ></div>
       
       <MapControls 
         onZoomIn={() => {/* Implemented in useMapControls */}}

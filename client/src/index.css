@@ -204,6 +204,17 @@
   animation: pulse 1s infinite;
 }
 
+/* Map container styling */
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
 /* Tooltip and popup styling */
 .tooltip {
   @apply px-2 py-1 text-xs bg-popover text-popover-foreground rounded shadow-md;
