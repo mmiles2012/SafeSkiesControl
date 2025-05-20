@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Mapbox GL CSS */
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
 :root {
   /* Light theme with better contrast */
   --background: 210 40% 98%;
