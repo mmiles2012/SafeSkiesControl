@@ -159,7 +159,6 @@ export class FlightAwareService {
           destination: flight.destination?.code || null,
           needsAssistance: false,
           verificationStatus: 'partially_verified', // FlightAware is one source
-          dataSourceId: this.dataSourceId || undefined,
           controllerSectorId: null
         };
 
@@ -207,13 +206,14 @@ export class FlightAwareService {
       // Update data source status
       if (this.dataSourceId) {
         await storage.updateDataSource(this.dataSourceId, {
-          status: 'online',
-          lastUpdated: new Date()
+          status: 'online'
         });
       }
 
       // Update ADSB status in data source service
-      await dataSourceService.updateDataSourceStatus('FlightAware ADS-B', 'online');
+      if (this.dataSourceId) {
+        await dataSourceService.updateDataSourceStatus(this.dataSourceId, 'online');
+      }
       
       return flights.length;
     } catch (error) {
