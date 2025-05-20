@@ -64,11 +64,20 @@ const Header: React.FC<HeaderProps> = ({
         message: error instanceof Error ? error.message : 'Failed to fetch live flight data'
       });
       
-      toast({
-        title: "Error loading data",
-        description: "Could not fetch live aircraft data. Please try again later.",
-        variant: "destructive",
-      });
+      // Show different message based on whether the API returned sample data
+      if (error.response?.data?.usingSampleData) {
+        toast({
+          title: "Using sample data",
+          description: "Live flight data unavailable. Displaying sample aircraft instead.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error loading data",
+          description: "Could not fetch flight data. Please try again later.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsFetchingLiveData(false);
     }

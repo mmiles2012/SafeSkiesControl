@@ -223,8 +223,7 @@ export class FlightAwareService {
       // Update data source status to show success
       if (this.dataSourceId) {
         await storage.updateDataSource(this.dataSourceId, {
-          status: 'online',
-          lastUpdated: new Date()
+          status: 'online'
         });
       }
 
