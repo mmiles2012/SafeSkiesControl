@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import { useEffect } from "react";
 import wsClient from "./lib/webSocket";
+import BasicMapView from "@/components/BasicMapView";
 
 function Router() {
   const [location] = useLocation();
@@ -15,6 +16,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/aircraft/:id" component={Dashboard} />
+      <Route path="/maptest" component={BasicMapView} />
       <Route component={NotFound} />
     </Switch>
   );
