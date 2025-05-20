@@ -65,6 +65,7 @@ const Dashboard = () => {
   // Handle aircraft detail modal close
   const handleCloseAircraftDetail = () => {
     setShowAircraftDetail(false);
+    navigate('/'); // Return to main dashboard
   };
 
   // Check for aircraft ID in URL and select that aircraft
