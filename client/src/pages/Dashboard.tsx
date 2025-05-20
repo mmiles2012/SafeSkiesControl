@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import AircraftList from '@/components/AircraftList';
 import MapView from '@/components/MapView';
 import NotificationPanel from '@/components/NotificationPanel';
+import { useToast } from '@/hooks/use-toast';
 import AircraftDetailModal from '@/components/AircraftDetailModal';
 import { useAircraftData } from '@/hooks/useAircraftData';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -16,6 +17,9 @@ const Dashboard = () => {
   const [showAircraftDetail, setShowAircraftDetail] = useState(false);
   const [showMapSettings, setShowMapSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [leftPanelMinimized, setLeftPanelMinimized] = useState(false);
+  const [rightPanelMinimized, setRightPanelMinimized] = useState(false);
+  const { toast } = useToast();
   const params = useParams<{ id: string }>();
   const [_, navigate] = useLocation();
   
@@ -109,16 +113,40 @@ const Dashboard = () => {
       />
       
       <main className="flex flex-1 overflow-hidden">
-        {/* Left panel - Aircraft list with fixed width */}
-        <div className="w-80 flex-shrink-0 border-r border-border flex-col-fixed overflow-container bg-card">
-          <AircraftList 
-            aircraft={filteredAircraft}
-            isLoading={aircraftLoading}
-            selectedAircraftId={selectedAircraft?.id}
-            onSelectAircraft={handleSelectAircraft}
-            filters={filters}
-            onUpdateFilters={updateFilters}
-          />
+        {/* Left panel - Aircraft list with minimize */}
+        <div className={`w-80 flex-shrink-0 border-r border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
+          leftPanelMinimized ? '-ml-80' : ''
+        }`}>
+          <div className="relative">
+            <button 
+              className="absolute -right-8 top-2 p-1 bg-secondary rounded-r"
+              onClick={() => {
+                setLeftPanelMinimized(!leftPanelMinimized);
+                toast({
+                  title: leftPanelMinimized ? "Aircraft panel expanded" : "Aircraft panel minimized",
+                  duration: 2000,
+                });
+              }}
+            >
+              {leftPanelMinimized ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              )}
+            </button>
+            <AircraftList 
+              aircraft={filteredAircraft}
+              isLoading={aircraftLoading}
+              selectedAircraftId={selectedAircraft?.id}
+              onSelectAircraft={handleSelectAircraft}
+              filters={filters}
+              onUpdateFilters={updateFilters}
+            />
+          </div>
         </div>
         
         {/* Center panel - Map view with flexible width */}
@@ -131,9 +159,32 @@ const Dashboard = () => {
           />
         </div>
         
-        {/* Right panel - Notifications with fixed width */}
-        <div className="w-80 flex-shrink-0 border-l border-border flex-col-fixed overflow-container bg-card">
-          <NotificationPanel 
+        {/* Right panel - Notifications with minimize */}
+        <div className={`w-80 flex-shrink-0 border-l border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
+          rightPanelMinimized ? 'mr-80' : ''
+        }`}>
+          <div className="relative">
+            <button 
+              className="absolute -left-8 top-2 p-1 bg-secondary rounded-l"
+              onClick={() => {
+                setRightPanelMinimized(!rightPanelMinimized);
+                toast({
+                  title: rightPanelMinimized ? "Notifications panel expanded" : "Notifications panel minimized",
+                  duration: 2000,
+                });
+              }}
+            >
+              {rightPanelMinimized ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              )}
+            </button>
+            <NotificationPanel 
             notifications={filteredNotifications}
             isLoading={notificationsLoading}
             onResolveNotification={resolveNotification}
