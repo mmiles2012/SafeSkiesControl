@@ -119,7 +119,7 @@ const Dashboard = () => {
         }`}>
           <div className="relative">
             <button 
-              className="absolute -right-8 top-2 p-1 bg-secondary rounded-r"
+              className="absolute -right-10 top-2 p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-r shadow-md flex items-center justify-center"
               onClick={() => {
                 setLeftPanelMinimized(!leftPanelMinimized);
                 toast({
@@ -165,7 +165,7 @@ const Dashboard = () => {
         }`}>
           <div className="relative">
             <button 
-              className="absolute -left-8 top-2 p-1 bg-secondary rounded-l"
+              className="absolute -left-10 top-2 p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-l shadow-md flex items-center justify-center"
               onClick={() => {
                 setRightPanelMinimized(!rightPanelMinimized);
                 toast({
