@@ -185,17 +185,18 @@ const Dashboard = () => {
               )}
             </button>
             <NotificationPanel 
-            notifications={filteredNotifications}
-            isLoading={notificationsLoading}
-            onResolveNotification={resolveNotification}
-            onSelectAircraftFromNotification={(aircraftId) => {
-              const aircraft = filteredAircraft.find(a => a.id === aircraftId);
-              if (aircraft) {
-                handleSelectAircraft(aircraft);
-              }
-            }}
-            dataSources={dataSources}
-          />
+              notifications={filteredNotifications}
+              isLoading={notificationsLoading}
+              onResolveNotification={resolveNotification}
+              onSelectAircraftFromNotification={(aircraftId) => {
+                const aircraft = filteredAircraft.find(a => a.id === aircraftId);
+                if (aircraft) {
+                  handleSelectAircraft(aircraft);
+                }
+              }}
+              dataSources={dataSources}
+            />
+          </div>
         </div>
       </main>
       
