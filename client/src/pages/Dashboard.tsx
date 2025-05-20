@@ -98,7 +98,7 @@ const Dashboard = () => {
   }, [aircraftLoading, aircraft.length, generateSampleData]);
 
   return (
-    <div className="flex flex-col h-screen bg-background text-text-primary">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       <Header 
         title="NextGen ATC System"
         currentUser={{ displayName: "John Smith", initials: "JS" }}
@@ -109,34 +109,43 @@ const Dashboard = () => {
       />
       
       <main className="flex flex-1 overflow-hidden">
-        <AircraftList 
-          aircraft={filteredAircraft}
-          isLoading={aircraftLoading}
-          selectedAircraftId={selectedAircraft?.id}
-          onSelectAircraft={handleSelectAircraft}
-          filters={filters}
-          onUpdateFilters={updateFilters}
-        />
+        {/* Left panel - Aircraft list with fixed width */}
+        <div className="w-80 flex-shrink-0 border-r border-border flex-col-fixed overflow-container bg-card">
+          <AircraftList 
+            aircraft={filteredAircraft}
+            isLoading={aircraftLoading}
+            selectedAircraftId={selectedAircraft?.id}
+            onSelectAircraft={handleSelectAircraft}
+            filters={filters}
+            onUpdateFilters={updateFilters}
+          />
+        </div>
         
-        <MapView 
-          aircraft={aircraft}
-          selectedAircraft={selectedAircraft}
-          onSelectAircraft={handleSelectAircraft}
-          dataSources={dataSources}
-        />
+        {/* Center panel - Map view with flexible width */}
+        <div className="flex-1 flex-col-fixed overflow-container relative">
+          <MapView 
+            aircraft={aircraft}
+            selectedAircraft={selectedAircraft}
+            onSelectAircraft={handleSelectAircraft}
+            dataSources={dataSources}
+          />
+        </div>
         
-        <NotificationPanel 
-          notifications={filteredNotifications}
-          isLoading={notificationsLoading}
-          onResolveNotification={resolveNotification}
-          onSelectAircraftFromNotification={(aircraftId) => {
-            const aircraft = filteredAircraft.find(a => a.id === aircraftId);
-            if (aircraft) {
-              handleSelectAircraft(aircraft);
-            }
-          }}
-          dataSources={dataSources}
-        />
+        {/* Right panel - Notifications with fixed width */}
+        <div className="w-80 flex-shrink-0 border-l border-border flex-col-fixed overflow-container bg-card">
+          <NotificationPanel 
+            notifications={filteredNotifications}
+            isLoading={notificationsLoading}
+            onResolveNotification={resolveNotification}
+            onSelectAircraftFromNotification={(aircraftId) => {
+              const aircraft = filteredAircraft.find(a => a.id === aircraftId);
+              if (aircraft) {
+                handleSelectAircraft(aircraft);
+              }
+            }}
+            dataSources={dataSources}
+          />
+        </div>
       </main>
       
       {showAircraftDetail && selectedAircraft && (

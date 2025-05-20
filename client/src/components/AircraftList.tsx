@@ -35,88 +35,111 @@ const AircraftList: React.FC<AircraftListProps> = ({
   };
 
   return (
-    <section className="w-1/5 border-r border-gray-800 flex flex-col bg-background">
-      <div className="p-3 bg-surface border-b border-gray-800">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-medium">Aircraft ({aircraft.length})</h2>
-          <button className="text-sm px-2 py-1 bg-surface-light rounded hover:bg-opacity-80">
-            <i className="material-icons text-sm align-text-top">filter_list</i> Filter
-          </button>
-        </div>
+    <section className="flex-col-fixed w-full h-full">
+      <div className="panel-header">
+        <h2 className="panel-title">Aircraft ({aircraft.length})</h2>
+        <button 
+          className="flex items-center text-sm px-2 py-1 bg-secondary rounded hover:bg-muted transition-colors"
+          onClick={() => onUpdateFilters({ showFilters: !filters.showFilters })}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span>Filter</span>
+        </button>
+      </div>
+      
+      <div className="p-3 border-b border-border">
         <div className="relative">
           <input
             type="text"
             placeholder="Search aircraft..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full bg-surface-light rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            className="form-input w-full"
           />
-          <i className="material-icons absolute right-2 top-1/2 transform -translate-y-1/2 text-text-secondary">search</i>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
         </div>
       </div>
       
-      <div className="flex space-x-1 px-3 py-2 bg-surface-light text-sm border-b border-gray-800">
+      <div className="flex flex-wrap gap-1 p-3 border-b border-border bg-muted text-sm">
         <button 
-          className={`px-2 py-1 rounded ${filters.verificationStatus === 'all' ? 'bg-primary text-white' : 'hover:bg-surface'}`}
+          className={`px-2 py-1 rounded-md transition-colors ${filters.verificationStatus === 'all' ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-accent'}`}
           onClick={() => handleFilterClick('all')}
         >
           All
         </button>
         <button 
-          className={`px-2 py-1 rounded ${filters.verificationStatus === 'verified' ? 'bg-primary text-white' : 'hover:bg-surface'}`}
+          className={`px-2 py-1 rounded-md transition-colors ${filters.verificationStatus === 'verified' ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-accent'}`}
           onClick={() => handleFilterClick('verified')}
         >
           Verified
         </button>
         <button 
-          className={`px-2 py-1 rounded ${filters.verificationStatus === 'unverified' ? 'bg-primary text-white' : 'hover:bg-surface'}`}
+          className={`px-2 py-1 rounded-md transition-colors ${filters.verificationStatus === 'unverified' ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-accent'}`}
           onClick={() => handleFilterClick('unverified')}
         >
           Unverified
         </button>
         <button 
-          className={`px-2 py-1 rounded ${filters.needsAssistance ? 'bg-primary text-white' : 'hover:bg-surface'}`}
+          className={`px-2 py-1 rounded-md transition-colors ${filters.needsAssistance ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-accent'}`}
           onClick={() => onUpdateFilters({ needsAssistance: !filters.needsAssistance })}
         >
           Alerts
         </button>
       </div>
       
-      <div className="overflow-y-auto custom-scrollbar flex-grow">
+      <div className="scrollable-content">
         {isLoading ? (
-          <div className="p-4 text-center text-text-secondary">Loading aircraft data...</div>
+          <div className="p-4 text-center text-muted-foreground">
+            <svg className="animate-spin h-5 w-5 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading aircraft data...
+          </div>
         ) : aircraft.length === 0 ? (
-          <div className="p-4 text-center text-text-secondary">
+          <div className="p-4 text-center text-muted-foreground">
             No aircraft match the current filters
           </div>
         ) : (
           aircraft.map((aircraft) => (
             <div
               key={aircraft.id}
-              className={`aircraft-item p-3 border-b border-gray-700 hover:cursor-pointer ${
-                selectedAircraftId === aircraft.id ? 'bg-surface-light' : ''
-              }`}
+              className={`aircraft-item ${selectedAircraftId === aircraft.id ? 'selected' : ''}`}
               onClick={() => onSelectAircraft(aircraft)}
             >
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center">
-                  <div 
-                    className={`status-indicator mr-2 ${
+              <div className="flex items-center space-x-2">
+                <div>
+                  {aircraft.needsAssistance ? (
+                    <span className="flex h-2.5 w-2.5 pulse">
+                      <span className="animate-ping absolute h-2.5 w-2.5 rounded-full bg-destructive opacity-75"></span>
+                      <span className="relative rounded-full h-2.5 w-2.5 bg-destructive"></span>
+                    </span>
+                  ) : (
+                    <span className={`flex h-2.5 w-2.5 rounded-full ${
                       aircraft.verificationStatus === 'verified' 
-                        ? 'bg-success' 
+                        ? 'bg-[hsl(var(--verified))]' 
                         : aircraft.verificationStatus === 'partially_verified' 
-                          ? 'bg-warning' 
-                          : 'bg-danger'
-                    } ${aircraft.needsAssistance ? 'animate-pulse' : ''}`}
-                  ></div>
-                  <span className="font-mono font-medium">{aircraft.callsign}</span>
+                          ? 'bg-[hsl(var(--partially-verified))]' 
+                          : 'bg-[hsl(var(--unverified))]'
+                    }`}></span>
+                  )}
                 </div>
-                <span className="text-xs font-medium px-2 py-0.5 rounded bg-primary">{aircraft.aircraftType}</span>
-              </div>
-              <div className="text-sm text-text-secondary flex justify-between">
-                <span>{formatAltitude(aircraft.altitude)}</span>
-                <span>HDG {formatHeading(aircraft.heading)}</span>
-                <span>{formatSpeed(aircraft.speed)}</span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-medium">{aircraft.callsign}</span>
+                    <span className="text-xs font-medium rounded-full px-2 py-0.5 bg-primary/10 text-primary">{aircraft.aircraftType}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1 flex justify-between">
+                    <span>{formatAltitude(aircraft.altitude)}</span>
+                    <span>HDG {formatHeading(aircraft.heading)}</span>
+                    <span>{formatSpeed(aircraft.speed)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           ))
