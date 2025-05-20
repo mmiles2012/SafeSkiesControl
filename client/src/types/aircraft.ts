@@ -26,6 +26,7 @@ export interface AircraftFilters {
   needsAssistance?: boolean;
   searchTerm?: string;
   type?: string;
+  showFilters?: boolean;
 }
 
 export interface DataSource {
