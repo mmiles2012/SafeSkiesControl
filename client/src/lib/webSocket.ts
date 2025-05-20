@@ -36,6 +36,13 @@ class WebSocketClient {
       
       // Send a ping to the server
       this.send('ping', {});
+      
+      // Send a ping every 30 seconds to keep the connection alive
+      setInterval(() => {
+        if (this._isConnected) {
+          this.send('ping', {});
+        }
+      }, 30000);
     };
     
     this.socket.onmessage = (event) => {
