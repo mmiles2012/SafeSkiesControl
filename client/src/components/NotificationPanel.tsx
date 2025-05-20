@@ -66,7 +66,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
   };
 
   return (
-    <section className="flex-col-fixed w-full h-full">
+    <section className="flex flex-col w-full h-full">
       <div className="panel-header">
         <h2 className="panel-title">Notifications</h2>
         <div className="flex space-x-1">
@@ -106,7 +106,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
         </button>
       </div>
       
-      <div className="scrollable-content">
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="p-4 text-center text-muted-foreground">
             <svg className="animate-spin h-5 w-5 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
