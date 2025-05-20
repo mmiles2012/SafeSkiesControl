@@ -73,10 +73,12 @@ export async function fetchDataSources() {
 export async function detectCollisions() {
   try {
     const response = await apiRequest("POST", "/api/ml/detect-collisions");
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error("Error detecting collisions:", error);
-    throw error;
+    // Return empty array instead of throwing
+    return [];
   }
 }
 
@@ -84,10 +86,12 @@ export async function detectCollisions() {
 export async function detectAirspaceViolations() {
   try {
     const response = await apiRequest("POST", "/api/ml/detect-airspace-violations");
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error("Error detecting airspace violations:", error);
-    throw error;
+    // Return empty array instead of throwing
+    return [];
   }
 }
 
