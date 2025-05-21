@@ -7,10 +7,16 @@ import { aircraftService } from './aircraftService';
 // FlightAware AeroAPI base URL and endpoints
 const AEROAPI_BASE_URL = 'https://aeroapi.flightaware.com/aeroapi';
 const SEARCH_ENDPOINT = '/flights/search';
-// Kansas City ARTCC airports - major airports in the ZKC ARTCC region
-const ZKC_AIRPORTS = ['KMCI', 'KICT', 'KMKC', 'KSTL', 'KSLN', 'KTUL', 'KOKC'];
-// Using the search endpoint with our Kansas City airports
-const KC_SEARCH_ENDPOINT = '/flights/search';
+
+// Kansas City ARTCC airports - limiting to only major airports to stay within rate limits
+const ZKC_AIRPORTS = ['KMCI', 'KSTL', 'KICT']; // Kansas City, St. Louis, Wichita
+
+// API rate limiting configuration
+const API_RATE_LIMIT = {
+  MAX_REQUESTS_PER_MINUTE: 15,
+  DELAY_BETWEEN_REQUESTS: 4000, // 4 seconds between requests
+  RETRY_DELAY: 60000 // 1 minute if we hit a rate limit
+};
 
 interface FlightAwareAircraft {
   ident: string;
@@ -100,6 +106,9 @@ export class FlightAwareService {
       
       // Collect all flights from major airports in Kansas City ARTCC (ZKC)
       let allFlights: FlightAwareAircraft[] = [];
+      
+      // Sleep function to respect rate limits
+      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       
       // Track rate limit to avoid hitting limits
       let remainingRequests = ZKC_AIRPORTS.length;

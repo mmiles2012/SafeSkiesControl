@@ -6,7 +6,7 @@ import { detectCollisions, detectAirspaceViolations } from '@/lib/dataIntegratio
 import mapboxgl from 'mapbox-gl';
 import { formatAltitude, formatSpeed, formatHeading } from '@/lib/mapUtils';
 import { MapContext } from '../hooks/useMapContext';
-import ArtccBoundaries from './ArtccBoundaries';
+import BoundaryLayer from './BoundaryLayer';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Initialize Mapbox with token directly for reliability
@@ -221,9 +221,10 @@ const MapView: React.FC<MapViewProps> = ({
         ></div>
         
         {mapLoaded && mapInstance && (
-          <ArtccBoundaries 
+          <BoundaryLayer 
             facilityId="ZKC" 
-            showKansasCityView={showKansasCityView} 
+            showKansasCityView={showKansasCityView}
+            visible={true}
           />
         )}
         
