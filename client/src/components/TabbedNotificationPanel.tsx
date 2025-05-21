@@ -109,8 +109,8 @@ export default function TabbedNotificationPanel({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-xl font-semibold">Information Panel</h2>
+      <div className="panel-header">
+        <h2 className="panel-title">Information Panel</h2>
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
