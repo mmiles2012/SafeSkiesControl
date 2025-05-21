@@ -134,28 +134,28 @@ const AircraftList: React.FC<AircraftListProps> = ({
                     <span className="font-mono font-medium">{aircraft.callsign}</span>
                     <span className="text-xs font-medium rounded-full px-2 py-0.5 bg-primary/10 text-primary">{aircraft.aircraftType}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-muted-foreground mt-1">
-                    <div className="flex justify-between">
-                      <span>ALT</span>
-                      <span className="font-mono">{formatAltitude(aircraft.altitude)}</span>
+                  <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
+                      <span className="text-muted-foreground mb-0.5">ALT</span>
+                      <span className="font-mono font-medium">{formatAltitude(aircraft.altitude)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>HDG</span>
-                      <span className="font-mono">{formatHeading(aircraft.heading)}</span>
+                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
+                      <span className="text-muted-foreground mb-0.5">HDG</span>
+                      <span className="font-mono font-medium">{formatHeading(aircraft.heading)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>SPD</span>
-                      <span className="font-mono">{formatSpeed(aircraft.speed)}</span>
+                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
+                      <span className="text-muted-foreground mb-0.5">SPD</span>
+                      <span className="font-mono font-medium">{formatSpeed(aircraft.speed)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>PLAN</span>
-                      <span className={`font-mono ${aircraft.flightPlan === 'IFR' ? 'text-primary' : 'text-accent'}`}>
+                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
+                      <span className="text-muted-foreground mb-0.5">PLAN</span>
+                      <span className={`font-mono font-medium ${aircraft.flightPlan === 'IFR' ? 'text-primary' : 'text-accent'}`}>
                         {aircraft.flightPlan}
                       </span>
                     </div>
                     {aircraft.flightPlan === 'IFR' && aircraft.nextWaypoint && (
-                      <div className="col-span-2 flex justify-between">
-                        <span>NEXT</span>
+                      <div className="col-span-2 px-2 py-1 rounded-md bg-muted/50 flex justify-between">
+                        <span className="text-muted-foreground">NEXT</span>
                         <span className="font-mono">{aircraft.nextWaypoint}</span>
                       </div>
                     )}
