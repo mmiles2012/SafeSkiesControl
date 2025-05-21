@@ -389,6 +389,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // ------------------------
+  // Sample data generation endpoint
+  // ------------------------
+
+  // Generate sample aircraft for specific ARTCC regions
+  router.post("/sample-data/artcc", async (req, res) => {
+    try {
+      const { artccIds } = req.body;
+      
+      if (!artccIds || !Array.isArray(artccIds) || artccIds.length === 0) {
+        return res.status(400).json({ 
+          error: "Invalid ARTCC IDs", 
+          message: "Please provide an array of ARTCC identifiers" 
+        });
+      }
+      
+      const count = await sampleDataService.generateSampleData(artccIds);
+      
+      // Get the updated aircraft list
+      const aircraft = await aircraftService.getAllAircraft();
+      
+      // Broadcast the updated aircraft to all clients
+      websocketService.broadcastAircraftUpdates(aircraft);
+      
+      res.json({ 
+        success: true, 
+        message: `Generated ${count} sample aircraft for ARTCC regions: ${artccIds.join(', ')}`,
+        count 
+      });
+    } catch (error) {
+      console.error('Error generating sample ARTCC data:', error);
+      res.status(500).json({ 
+        error: "Failed to generate sample data",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // ------------------------
   // ML-related endpoints
   // ------------------------
   
