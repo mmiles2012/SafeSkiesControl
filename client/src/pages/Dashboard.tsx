@@ -219,11 +219,11 @@ const Dashboard = () => {
               )}
             </button>
             <AircraftList 
-              aircraft={filteredAircraft}
+              aircraft={Array.isArray(filteredAircraft) ? filteredAircraft : []}
               isLoading={aircraftLoading}
               selectedAircraftId={selectedAircraft?.id}
               onSelectAircraft={handleSelectAircraft}
-              filters={filters}
+              filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
               onUpdateFilters={updateFilters}
             />
           </div>

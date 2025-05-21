@@ -34,10 +34,13 @@ const AircraftList: React.FC<AircraftListProps> = ({
     });
   };
 
+  // Create a safe copy of the aircraft array for rendering
+  const safeAircraft = Array.isArray(aircraft) ? aircraft : [];
+  
   return (
     <section className="flex-col-fixed w-full h-full">
       <div className="panel-header">
-        <h2 className="panel-title">Aircraft ({aircraft.length})</h2>
+        <h2 className="panel-title">Aircraft ({safeAircraft.length})</h2>
         <button 
           className="flex items-center text-sm px-2 py-1 bg-secondary rounded hover:bg-muted transition-colors"
           onClick={() => onUpdateFilters({ showFilters: !filters.showFilters })}
@@ -101,12 +104,12 @@ const AircraftList: React.FC<AircraftListProps> = ({
             </svg>
             Loading aircraft data...
           </div>
-        ) : aircraft.length === 0 ? (
+        ) : safeAircraft.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
             No aircraft match the current filters
           </div>
         ) : (
-          aircraft.map((aircraft) => (
+          safeAircraft.map((aircraft) => (
             <div
               key={aircraft.id}
               className={`aircraft-item ${selectedAircraftId === aircraft.id ? 'selected' : ''}`}
