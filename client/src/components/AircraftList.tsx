@@ -97,7 +97,7 @@ const AircraftList: React.FC<AircraftListProps> = ({
         </button>
       </div>
 
-      <div className="scrollable-content">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-muted">
         {isLoading ? (
           <div className="p-4 text-center text-muted-foreground">
             <svg className="animate-spin h-5 w-5 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -139,27 +139,25 @@ const AircraftList: React.FC<AircraftListProps> = ({
                     <span className="font-mono font-medium">{aircraft.callsign}</span>
                     <span className="text-xs font-medium rounded-full px-2 py-0.5 bg-primary/10 text-primary">{aircraft.aircraftType}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs mt-2">
-                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
-                      <span className="text-muted-foreground mb-0.5">ALT</span>
+                  <div className="grid grid-cols-3 gap-1.5 text-xs mt-2">
+                    <div className="px-1.5 py-1 rounded-md bg-muted/50 flex justify-between items-center">
+                      <span className="text-muted-foreground">ALT</span>
                       <span className="font-mono font-medium">{formatAltitude(aircraft.altitude)}</span>
                     </div>
-                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
-                      <span className="text-muted-foreground mb-0.5">HDG</span>
+                    <div className="px-1.5 py-1 rounded-md bg-muted/50 flex justify-between items-center">
+                      <span className="text-muted-foreground">HDG</span>
                       <span className="font-mono font-medium">{formatHeading(aircraft.heading)}</span>
                     </div>
-                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
-                      <span className="text-muted-foreground mb-0.5">SPD</span>
+                    <div className="px-1.5 py-1 rounded-md bg-muted/50 flex justify-between items-center">
+                      <span className="text-muted-foreground">SPD</span>
                       <span className="font-mono font-medium">{formatSpeed(aircraft.speed)}</span>
                     </div>
-                    <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
-                      <span className="text-muted-foreground mb-0.5">PLAN</span>
-                      <span className="font-mono font-medium text-primary">
-                        IFR
-                      </span>
+                    <div className="col-span-2 px-1.5 py-1 rounded-md bg-muted/50 flex justify-between items-center">
+                      <span className="text-muted-foreground">PLAN</span>
+                      <span className="font-mono font-medium text-primary">IFR</span>
                     </div>
                     {aircraft && aircraft.destination && (
-                      <div className="col-span-2 px-2 py-1 rounded-md bg-muted/50 flex justify-between">
+                      <div className="px-1.5 py-1 rounded-md bg-muted/50 flex justify-between items-center">
                         <span className="text-muted-foreground">DEST</span>
                         <span className="font-mono">{typeof aircraft.destination === 'string' ? aircraft.destination : ''}</span>
                       </div>
