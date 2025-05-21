@@ -45,8 +45,28 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
   ];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-background border-border max-w-3xl" aria-describedby="aircraft-details-description">
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) {
+          // Force remove any remaining popups when modal closes
+          document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+          onClose();
+        }
+      }}
+    >
+      <DialogContent 
+        className="bg-background border-border max-w-3xl" 
+        aria-describedby="aircraft-details-description"
+        onEscapeKeyDown={() => {
+          // Force remove any remaining popups when Esc is pressed
+          document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+        }}
+        onPointerDownOutside={() => {
+          // Force remove any remaining popups when clicking outside
+          document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-medium">
             Aircraft Details - {aircraft.callsign}

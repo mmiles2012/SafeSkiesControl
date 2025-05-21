@@ -186,31 +186,57 @@ const MapView: React.FC<MapViewProps> = ({
         el.classList.add('pulse');
       }
       
-      // Create popup with basic info
-      const popup = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: true, // Make popup close when clicked
-        className: 'aircraft-popup',
-        offset: 25 // Offset from marker
-      }).setHTML(`
-        <div class="px-2 py-1 text-xs font-medium">
-          <div class="font-bold">${a.callsign}</div>
-          <div>${a.aircraftType}</div>
-          <div>${formatAltitude(a.altitude)}</div>
-        </div>
-      `);
-      
-      // Add popup to tracking array
-      popupsRef.current.push(popup);
-      
-      // Add marker to map
+      // Add marker to map without popup - we'll handle hover differently
       const marker = new mapboxgl.Marker(el)
         .setLngLat([a.longitude, a.latitude])
-        .setPopup(popup)
         .addTo(mapRef.current!);
-      
-      // Add marker to tracking array
+        
+      // Track the marker for cleanup
       markersRef.current.push(marker);
+      
+      // Handle hover events manually for better control
+      el.addEventListener('mouseenter', () => {
+        // Remove any existing popups first
+        document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+        
+        // Create and show popup only on hover
+        const hoverPopup = new mapboxgl.Popup({
+          closeButton: false,
+          closeOnClick: true,
+          className: 'aircraft-popup',
+          offset: 25
+        })
+        .setLngLat([a.longitude, a.latitude])
+        .setHTML(`
+          <div class="px-2 py-1 text-xs font-medium">
+            <div class="font-bold">${a.callsign}</div>
+            <div>${a.aircraftType}</div>
+            <div>${formatAltitude(a.altitude)}</div>
+          </div>
+        `)
+        .addTo(mapRef.current!);
+        
+        // Store reference to this popup
+        popupsRef.current.push(hoverPopup);
+      });
+      
+      // Remove popup when mouse leaves marker
+      el.addEventListener('mouseleave', () => {
+        // Delay the removal slightly to allow clicking
+        setTimeout(() => {
+          const popups = document.querySelectorAll('.mapboxgl-popup');
+          if (popups.length > 0) {
+            popups.forEach(p => {
+              // Only remove if not being interacted with
+              if (!p.matches(':hover')) {
+                p.remove();
+              }
+            });
+          }
+        }, 100);
+      });
+      
+      // Marker is already added to tracking array above
       
       // Add click handler to select aircraft
       el.addEventListener('click', () => {
