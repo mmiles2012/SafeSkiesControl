@@ -31,7 +31,7 @@ const MapView: React.FC<MapViewProps> = ({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
-  const [showKansasCityView, setShowKansasCityView] = useState(true);
+  const [detailedView, setDetailedView] = useState(true);
   // Sync the ARTCC selection with props
   const [selectedARTCC, setSelectedARTCC] = useState("ZKC"); // Default to Kansas City ARTCC
   
@@ -43,6 +43,8 @@ const MapView: React.FC<MapViewProps> = ({
     { id: "ZNY", name: "New York" },
     { id: "ZMA", name: "Miami" }
   ];
+  
+  // No need for this effect - we'll handle ARTCC changes in the dropdown
   const [mapSettings, setMapSettings] = useState<MapSettings>({
     showGrid: true,
     showRestrictions: true,
@@ -295,7 +297,7 @@ const MapView: React.FC<MapViewProps> = ({
         {mapLoaded && mapInstance && (
           <BoundaryLayer 
             facilityId={selectedARTCC} 
-            showKansasCityView={showKansasCityView}
+            showKansasCityView={detailedView}
             visible={true}
           />
         )}
@@ -325,8 +327,7 @@ const MapView: React.FC<MapViewProps> = ({
                   onChange={(e) => {
                     const newARTCC = e.target.value;
                     setSelectedARTCC(newARTCC);
-                    // When changing ARTCC, update the view accordingly
-                    setShowKansasCityView(newARTCC === "ZKC");
+                    // When changing ARTCC, update the boundary layer
                     // Notify parent component about ARTCC change
                     if (onARTCCChange) {
                       onARTCCChange(newARTCC);
@@ -342,14 +343,14 @@ const MapView: React.FC<MapViewProps> = ({
                 </select>
               </div>
               <button
-                onClick={() => setShowKansasCityView(!showKansasCityView)}
+                onClick={() => setDetailedView(!detailedView)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md w-full ${
-                  showKansasCityView 
+                  detailedView 
                     ? 'bg-primary text-primary-foreground' 
                     : 'bg-secondary hover:bg-secondary/80'
                 }`}
               >
-                {showKansasCityView ? 'Show Detailed View' : 'Show Overview'}
+                {detailedView ? 'Show Detailed View' : 'Show Overview'}
               </button>
             </div>
           </div>
@@ -387,7 +388,7 @@ const MapView: React.FC<MapViewProps> = ({
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                 <polyline points="22 4 12 14.01 9 11.01"/>
               </svg>
-              <span className="font-medium">Sector: {showKansasCityView ? 'ZKC' : 'ZOA35'}</span>
+              <span className="font-medium">Sector: {selectedARTCC}</span>
             </div>
             
             <div className="flex items-center">
