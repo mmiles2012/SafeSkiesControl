@@ -12,15 +12,13 @@ export interface Aircraft {
   speed: number; // in knots
   latitude: number;
   longitude: number;
-  origin?: string;
-  destination?: string;
+  origin?: string | null;
+  destination?: string | null;
   squawk?: string;
   verificationStatus: VerificationStatus;
   verifiedSources: VerificationSource[];
   controllerSectorId?: number;
   needsAssistance: boolean;
-  flightPlan: 'VFR' | 'IFR';
-  nextWaypoint?: string;
 }
 
 export interface AircraftFilters {
