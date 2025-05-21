@@ -272,7 +272,10 @@ const Dashboard = () => {
               isLoadingNOTAMs={notamsLoading}
               onResolveNotification={resolveNotification}
               onSelectAircraftFromNotification={(aircraftId) => {
-                const aircraft = filteredAircraft.find(a => a.id === aircraftId);
+                // Import at the top was already done, just fully typing the parameter
+                const aircraft = Array.isArray(filteredAircraft) 
+                  ? filteredAircraft.find((a: { id: number }) => a.id === aircraftId)
+                  : null;
                 if (aircraft) {
                   handleSelectAircraft(aircraft);
                 }

@@ -34,8 +34,10 @@ const AircraftList: React.FC<AircraftListProps> = ({
     });
   };
 
-  // Create a safe copy of the aircraft array for rendering
-  const safeAircraft = Array.isArray(aircraft) ? aircraft : [];
+  // Create a safe copy of the aircraft array with additional validation
+  const safeAircraft = Array.isArray(aircraft) ? aircraft.filter(a => 
+    a && typeof a === 'object' && 'id' in a && 'callsign' in a
+  ) : [];
   
   return (
     <section className="flex-col-fixed w-full h-full">
@@ -153,13 +155,13 @@ const AircraftList: React.FC<AircraftListProps> = ({
                     <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
                       <span className="text-muted-foreground mb-0.5">PLAN</span>
                       <span className="font-mono font-medium text-primary">
-                        {aircraft.flightPlan || 'N/A'}
+                        IFR
                       </span>
                     </div>
                     {aircraft && aircraft.destination && (
                       <div className="col-span-2 px-2 py-1 rounded-md bg-muted/50 flex justify-between">
                         <span className="text-muted-foreground">DEST</span>
-                        <span className="font-mono">{aircraft.destination?.toString() || ''}</span>
+                        <span className="font-mono">{typeof aircraft.destination === 'string' ? aircraft.destination : ''}</span>
                       </div>
                     )}
                   </div>
