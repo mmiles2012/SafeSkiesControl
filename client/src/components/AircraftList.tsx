@@ -40,7 +40,7 @@ const AircraftList: React.FC<AircraftListProps> = ({
   ) : [];
   
   return (
-    <section className="flex-col-fixed w-full h-full">
+    <section className="flex flex-col w-full h-full overflow-hidden">
       <div className="panel-header">
         <h2 className="panel-title">Aircraft ({safeAircraft.length})</h2>
         <button 
@@ -97,7 +97,7 @@ const AircraftList: React.FC<AircraftListProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-muted">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-2 scrollbar scrollbar-w-2 scrollbar-thumb-rounded-lg scrollbar-thumb-accent scrollbar-track-muted/20">
         {isLoading ? (
           <div className="p-4 text-center text-muted-foreground">
             <svg className="animate-spin h-5 w-5 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
