@@ -201,67 +201,105 @@ const MapView: React.FC<MapViewProps> = ({
         el.classList.add('pulse');
       }
       
-      // Add marker to map without popup - we'll handle hover differently
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([a.longitude, a.latitude])
-        .addTo(mapRef.current!);
-        
-      // Track the marker for cleanup
-      markersRef.current.push(marker);
-      
-      // Handle hover events manually for better control
-      el.addEventListener('mouseenter', () => {
-        // Only show popup if no aircraft is selected to prevent dual display
-        if (!selectedAircraft) {
-          // Remove any existing popups first
-          document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
-          
-          // Create and show popup only on hover
-          const hoverPopup = new mapboxgl.Popup({
-            closeButton: false,
-            closeOnClick: true,
-            className: 'aircraft-popup',
-            offset: 25,
-            // Add max-width to prevent overflow
-            maxWidth: '220px'
-          })
-          .setLngLat([a.longitude, a.latitude])
-          .setHTML(`
-            <div class="px-2 py-1 text-xs font-medium">
-              <div class="font-bold">${a.callsign}</div>
-              <div>${a.aircraftType}</div>
-              <div>${formatAltitude(a.altitude)}</div>
-            </div>
-          `)
-          .addTo(mapRef.current!);
-          
-          // Store reference to this popup
-          popupsRef.current.push(hoverPopup);
+      // Add marker to map without popup, with validation to prevent Invalid LngLat errors
+      try {
+        // Validate coordinates before creating marker
+        if (typeof a.longitude === 'number' && !isNaN(a.longitude) && 
+            typeof a.latitude === 'number' && !isNaN(a.latitude)) {
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat([a.longitude, a.latitude])
+            .addTo(mapRef.current!);
+            
+          // Track the marker for cleanup 
+          markersRef.current.push(marker);
+        } else {
+          console.warn(`Invalid coordinates for aircraft ${a.callsign}:`, a.longitude, a.latitude);
+          return; // Skip the rest for this invalid aircraft
         }
-      });
+      } catch (error) {
+        console.error(`Error adding marker for ${a.callsign}:`, error);
+        return; // Skip rest of processing for this aircraft
+      }
       
-      // Remove popup when mouse leaves marker
-      el.addEventListener('mouseleave', () => {
-        // Delay the removal slightly to allow clicking
-        setTimeout(() => {
-          const popups = document.querySelectorAll('.mapboxgl-popup');
-          if (popups.length > 0) {
-            popups.forEach(p => {
-              // Only remove if not being interacted with
-              if (!p.matches(':hover')) {
-                p.remove();
+      // Only attach the event listeners if we have valid coordinates
+      try {
+        if (typeof a.longitude === 'number' && !isNaN(a.longitude) && 
+            typeof a.latitude === 'number' && !isNaN(a.latitude)) {
+            
+          // Handle hover events manually for better control
+          el.addEventListener('mouseenter', () => {
+            // Only show popup if no aircraft is selected to prevent dual display
+            if (!selectedAircraft) {
+              try {
+                // Remove any existing popups first
+                document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+                
+                // Create and show popup only on hover
+                const hoverPopup = new mapboxgl.Popup({
+                  closeButton: false,
+                  closeOnClick: true,
+                  className: 'aircraft-popup',
+                  offset: 25,
+                  // Add max-width to prevent overflow
+                  maxWidth: '220px'
+                })
+                .setLngLat([a.longitude, a.latitude])
+                .setHTML(`
+                  <div class="px-2 py-1 text-xs font-medium">
+                    <div class="font-bold">${a.callsign}</div>
+                    <div>${a.aircraftType}</div>
+                    <div>${formatAltitude(a.altitude)}</div>
+                  </div>
+                `)
+                .addTo(mapRef.current!);
+                
+                // Store reference to this popup
+                popupsRef.current.push(hoverPopup);
+              } catch (error) {
+                console.error('Error showing aircraft popup:', error);
               }
-            });
-          }
-        }, 100);
-      });
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error setting up hover events for aircraft:', error);
+      }
       
-      // Marker is already added to tracking array above
-      
-      // Add click handler to select aircraft
-      el.addEventListener('click', () => {
-        onSelectAircraft(a);
-      });
+      // Only add these event listeners if we're working with valid coordinates
+      try {
+        if (typeof a.longitude === 'number' && !isNaN(a.longitude) && 
+            typeof a.latitude === 'number' && !isNaN(a.latitude)) {
+            
+          // Remove popup when mouse leaves marker
+          el.addEventListener('mouseleave', () => {
+            // Delay the removal slightly to allow clicking
+            setTimeout(() => {
+              try {
+                const popups = document.querySelectorAll('.mapboxgl-popup');
+                if (popups.length > 0) {
+                  popups.forEach(p => {
+                    // Only remove if not being interacted with
+                    if (!p.matches(':hover')) {
+                      p.remove();
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('Error in mouseleave handler:', error);
+              }
+            }, 100);
+          });
+          
+          // Marker is already added to tracking array above
+          
+          // Add click handler to select aircraft
+          el.addEventListener('click', () => {
+            onSelectAircraft(a);
+          });
+        }
+      } catch (error) {
+        console.error('Error setting up mouseleave/click events:', error);
+      }
     });
   }, [aircraft, mapLoaded, onSelectAircraft]);
   
