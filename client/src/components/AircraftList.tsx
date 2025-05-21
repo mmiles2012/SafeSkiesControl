@@ -12,12 +12,12 @@ interface AircraftListProps {
 }
 
 const AircraftList: React.FC<AircraftListProps> = ({
-  aircraft,
-  isLoading,
+  aircraft = [],
+  isLoading = false,
   selectedAircraftId,
   onSelectAircraft,
-  filters,
-  onUpdateFilters
+  filters = { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false },
+  onUpdateFilters = () => {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 

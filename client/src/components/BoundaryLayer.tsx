@@ -40,8 +40,21 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
       ];
 
       // Clean up any existing layers
-
-
+      try {
+        layersToRemove.forEach(layerId => {
+          if (map && typeof map.getLayer === 'function' && map.getLayer(layerId)) {
+            map.removeLayer(layerId);
+          }
+        });
+        
+        // Remove source if it exists
+        if (map && typeof map.getSource === 'function' && map.getSource('artcc-boundary')) {
+          map.removeSource('artcc-boundary');
+        }
+      } catch (error) {
+        console.error('Error cleaning up existing layers:', error);
+      }
+      
       // Only proceed if the component is visible
       if (!visible) {
         setLoading(false);
@@ -259,7 +272,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
 
   // Effect to update the boundary when parameters change
   useEffect(() => {
-    if (!map || !map.loaded()) return;
+    if (!map) return;
 
     const initBoundary = () => {
       try {
@@ -270,11 +283,15 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
       }
     };
 
-    map.once('load', initBoundary);
+    // Check if map has loaded method before using it
+    const isMapLoaded = map && typeof map.loaded === 'function' ? map.loaded() : false;
     
-    // Also try to initialize immediately if map is already loaded
-    if (map.loaded()) {
+    if (isMapLoaded) {
+      // Map is already loaded, initialize immediately
       initBoundary();
+    } else {
+      // Wait for map to load
+      map.once('load', initBoundary);
     }
 
     // Cleanup function
@@ -282,7 +299,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
       if (!map) return;
 
       // Remove the load event listener if it exists
-      map.off('load', createARTCCPolygon);
+      map.off('load', initBoundary);
 
       const layersToRemove = [
         'artcc-boundary-fill',
@@ -290,14 +307,19 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
         'artcc-boundary-background'
       ];
 
-      layersToRemove.forEach(layerId => {
-        if (map && map.getLayer && map.getLayer(layerId)) {
-          map.removeLayer(layerId);
-        }
-      });
+      // Safely remove layers and sources
+      try {
+        layersToRemove.forEach(layerId => {
+          if (map && typeof map.getLayer === 'function' && map.getLayer(layerId)) {
+            map.removeLayer(layerId);
+          }
+        });
 
-      if (map && map.getSource && map.getSource('artcc-boundary')) {
-        map.removeSource('artcc-boundary');
+        if (map && typeof map.getSource === 'function' && map.getSource('artcc-boundary')) {
+          map.removeSource('artcc-boundary');
+        }
+      } catch (error) {
+        console.error('Error cleaning up boundary layers:', error);
       }
     };
   }, [map, facilityId, showKansasCityView, visible]);
