@@ -355,7 +355,7 @@ const MapView: React.FC<MapViewProps> = ({
           onUpdateSettings={(settings) => setMapSettings(prevSettings => ({...prevSettings, ...settings}))}
         />
         
-        <div className="absolute right-4 top-4 flex items-center space-x-2 z-10">
+        <div className="absolute left-4 top-4 flex items-center space-x-2 z-10">
           <div className="bg-background/90 dark:bg-card/90 p-1.5 rounded-lg shadow-md border border-border">
             <div className="flex flex-col space-y-2">
               <div className="flex items-center justify-between">
@@ -365,8 +365,6 @@ const MapView: React.FC<MapViewProps> = ({
                   onChange={(e) => {
                     const newARTCC = e.target.value;
                     setSelectedARTCC(newARTCC);
-                    // When changing ARTCC, update the boundary layer
-                    // Notify parent component about ARTCC change
                     if (onARTCCChange) {
                       onARTCCChange(newARTCC);
                     }
@@ -390,27 +388,6 @@ const MapView: React.FC<MapViewProps> = ({
               >
                 {detailedView ? 'Show Detailed View' : 'Show Overview'}
               </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="absolute left-4 top-20 bg-background/90 dark:bg-card/90 p-2 rounded-lg shadow-md border border-border">
-          <div className="flex flex-col space-y-2 text-sm">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center px-2 py-1 rounded-md bg-muted/50">
-                <span className="inline-block w-3 h-3 rounded-full bg-[hsl(var(--verified))] mr-1.5"></span>
-                <span>Verified: {verificationCounts.verified}</span>
-              </div>
-              <div className="flex items-center px-2 py-1 rounded-md bg-muted/50">
-                <span className="inline-block w-3 h-3 rounded-full bg-[hsl(var(--partially-verified))] mr-1.5"></span>
-                <span>Partial: {verificationCounts.partiallyVerified}</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center px-2 py-1 rounded-md bg-muted/50">
-                <span className="inline-block w-3 h-3 rounded-full bg-[hsl(var(--unverified))] mr-1.5"></span>
-                <span>Unverified: {verificationCounts.unverified}</span>
-              </div>
             </div>
           </div>
         </div>
