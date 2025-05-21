@@ -149,14 +149,14 @@ const AircraftList: React.FC<AircraftListProps> = ({
                     </div>
                     <div className="px-2 py-1 rounded-md bg-muted/50 flex flex-col items-center">
                       <span className="text-muted-foreground mb-0.5">PLAN</span>
-                      <span className={`font-mono font-medium ${aircraft.flightPlan === 'IFR' ? 'text-primary' : 'text-accent'}`}>
-                        {aircraft.flightPlan}
+                      <span className="font-mono font-medium text-primary">
+                        IFR
                       </span>
                     </div>
-                    {aircraft.flightPlan === 'IFR' && aircraft.nextWaypoint && (
+                    {aircraft.destination && (
                       <div className="col-span-2 px-2 py-1 rounded-md bg-muted/50 flex justify-between">
-                        <span className="text-muted-foreground">NEXT</span>
-                        <span className="font-mono">{aircraft.nextWaypoint}</span>
+                        <span className="text-muted-foreground">DEST</span>
+                        <span className="font-mono">{aircraft.destination}</span>
                       </div>
                     )}
                   </div>

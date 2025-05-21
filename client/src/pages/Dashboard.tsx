@@ -137,9 +137,9 @@ const Dashboard = () => {
 
   // Check for aircraft ID in URL and select that aircraft
   useEffect(() => {
-    if (params && params.id && aircraft.length > 0) {
+    if (params && params.id && Array.isArray(aircraft) && aircraft.length > 0) {
       const aircraftId = parseInt(params.id);
-      const selectedAc = aircraft.find(a => a.id === aircraftId);
+      const selectedAc = aircraft.find((a: Aircraft) => a.id === aircraftId);
       if (selectedAc) {
         selectAircraft(selectedAc);
         setShowAircraftDetail(true);
@@ -159,10 +159,10 @@ const Dashboard = () => {
       }
     };
     
-    if (!aircraftLoading && aircraft.length === 0) {
+    if (!aircraftLoading && Array.isArray(aircraft) && aircraft.length === 0) {
       createSampleData();
     }
-  }, [aircraftLoading, aircraft.length, generateARTCCSampleData, selectedARTCC]);
+  }, [aircraftLoading, aircraft, generateARTCCSampleData, selectedARTCC]);
 
   useEffect(() => {
     // Load ARTCC-specific sample data when the component mounts
@@ -232,7 +232,7 @@ const Dashboard = () => {
         {/* Center panel - Map view with flexible width */}
         <div className="flex-1 flex-col-fixed overflow-container relative">
           <MapView 
-            aircraft={aircraft}
+            aircraft={Array.isArray(aircraft) ? aircraft : []}
             selectedAircraft={selectedAircraft}
             onSelectAircraft={handleSelectAircraft}
             dataSources={dataSources}

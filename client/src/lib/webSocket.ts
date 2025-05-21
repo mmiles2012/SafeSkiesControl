@@ -58,41 +58,61 @@ class WebSocketClient {
       
       this.socket.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
+          // Handle both string and JSON messages
+          let data;
+          if (typeof event.data === 'string') {
+            // Check if it's a simple string message (like "pong")
+            if (event.data === "pong") {
+              console.log("Received heartbeat pong");
+              return;
+            }
+            // Otherwise try to parse as JSON
+            data = JSON.parse(event.data);
+          } else {
+            console.warn("Received non-string message:", event.data);
+            return;
+          }
           
           // Handle different message types
           switch (data.type) {
+            case 'connection':
+              console.log("WebSocket connection established");
+              break;
             case 'aircraft_updates':
-              this.notifyAircraftUpdateListeners(data.aircraft);
+              this.notifyAircraftUpdateListeners(data.data.aircraft);
               break;
             case 'aircraft_update':
-              this.notifySingleAircraftUpdateListeners(data.aircraft);
+              this.notifySingleAircraftUpdateListeners(data.data.aircraft);
+              break;
+            case 'single_aircraft_update':
+              this.notifySingleAircraftUpdateListeners(data.data.aircraft);
               break;
             case 'notification':
-              this.notifyNotificationListeners(data.notification);
+              this.notifyNotificationListeners(data.data.notification);
               break;
             case 'collision_alert':
               this.notifyCollisionAlertListeners(
-                data.aircraftIds,
-                data.timeToCollision,
-                data.severity
+                data.data.aircraftIds,
+                data.data.timeToCollision,
+                data.data.severity
               );
               break;
             case 'airspace_alert':
               this.notifyAirspaceAlertListeners(
-                data.aircraftId,
-                data.restrictionId,
-                data.restrictionType
+                data.data.aircraftId,
+                data.data.restrictionId,
+                data.data.restrictionType
               );
               break;
             case 'pong':
-              // Handle pong - could update last response time
+              // Heartbeat response received
+              console.log("Received pong response", data.data.timestamp);
               break;
             default:
               console.log('Unhandled WebSocket message type:', data.type);
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('Error processing WebSocket message:', error);
         }
       };
       
