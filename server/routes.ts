@@ -491,7 +491,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const boundaries = boundaryService.getKansasCityBoundary();
       const geoJSON = boundaryService.convertToGeoJSON(boundaries);
-      res.json(geoJSON);
+      
+      // Include facility identifier in response for frontend
+      res.json({
+        kcBoundary: geoJSON,
+        facilityId: 'ZKC'
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch Kansas City boundary data" });
     }

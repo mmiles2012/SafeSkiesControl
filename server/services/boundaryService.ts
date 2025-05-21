@@ -126,7 +126,28 @@ export class BoundaryService {
 
   // Get boundary for Kansas City (ZKC)
   getKansasCityBoundary(): BoundaryData[] {
-    return this.getBoundaryData('ZKC');
+    const boundaries = this.getBoundaryData('ZKC');
+    if (boundaries.length > 0) {
+      console.log(`Found ${boundaries.length} boundary sections for Kansas City ARTCC (ZKC)`);
+    } else {
+      console.warn('No boundary data found for Kansas City ARTCC (ZKC)');
+    }
+    return boundaries;
+  }
+  
+  // Get all boundaries for context around a specific ARTCC
+  getSurroundingBoundaries(centerFacilityId: string): { [facilityId: string]: BoundaryData[] } {
+    const result: { [facilityId: string]: BoundaryData[] } = {};
+    
+    // Get all facilities
+    const allFacilities = this.getAllFacilityIds();
+    
+    // Add each facility's boundaries to the result
+    for (const facilityId of allFacilities) {
+      result[facilityId] = this.getBoundaryData(facilityId);
+    }
+    
+    return result;
   }
 
   // Convert boundaries to GeoJSON format for map display

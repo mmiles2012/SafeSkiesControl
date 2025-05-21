@@ -30,7 +30,10 @@ const ArtccBoundaries: React.FC<BoundaryProps> = ({
           : `/api/boundaries/${facilityId}`;
         
         const response = await axios.get(endpoint);
-        const geoJSON = response.data;
+        const data = response.data;
+        
+        // Handle both formats (plain GeoJSON or structured response with metadata)
+        const geoJSON = data.kcBoundary || data;
         
         // Check if the layer already exists, remove it if it does
         if (map.getLayer('artcc-boundaries')) {
@@ -47,40 +50,44 @@ const ArtccBoundaries: React.FC<BoundaryProps> = ({
           data: geoJSON
         });
         
-        // Remove any existing layers first
-        if (map.getLayer('outside-boundary')) {
-          map.removeLayer('outside-boundary');
-        }
-        if (map.getLayer('artcc-boundaries-fill')) {
-          map.removeLayer('artcc-boundaries-fill');
+        // First, create a style for the base map that has a grayed-out look
+        if (showKansasCityView) {
+          // Apply a semi-transparent gray overlay to the entire map
+          if (!map.getLayer('global-gray-overlay')) {
+            map.addLayer({
+              id: 'global-gray-overlay',
+              type: 'background',
+              paint: {
+                'background-color': 'rgba(200, 200, 200, 0.6)'
+              }
+            });
+          }
         }
         
-        // Add the fill layer for the boundaries first - this becomes our visible area
+        // Add the ARTCC boundary with a light fill
         map.addLayer({
           id: 'artcc-boundaries-fill',
           type: 'fill',
           source: 'artcc-boundaries',
           layout: {},
           paint: {
-            'fill-color': '#f0f8ff', // Light blue hue for airspace
-            'fill-opacity': 0.4
+            'fill-color': '#ffffff', // White fill for the boundary area
+            'fill-opacity': showKansasCityView ? 0.9 : 0.2 // More opaque when KC view to "clear" the gray overlay
           }
         });
         
-        // Use the boundaries to create a mask for the outside area
-        if (showKansasCityView) {
-          map.addLayer({
-            id: 'outside-boundary',
-            type: 'fill',
-            source: 'artcc-boundaries',
-            paint: {
-              'fill-color': '#666666',
-              'fill-opacity': 0.3,
-              'fill-outline-color': '#ff9900'
-            },
-            filter: ['!=', ['get', 'facilityId'], 'ZKC'] // Show gray for non-Kansas City areas
-          });
-        }
+        // Add a distinct border to make the boundary visible
+        map.addLayer({
+          id: 'artcc-boundaries-outline',
+          type: 'line',
+          source: 'artcc-boundaries',
+          layout: {},
+          paint: {
+            'line-color': '#ff9900', // Orange outline for visibility
+            'line-width': 3,
+            'line-opacity': 1
+          }
+        });
         
         // Add the line layer to display the boundaries
         map.addLayer({
@@ -118,15 +125,24 @@ const ArtccBoundaries: React.FC<BoundaryProps> = ({
     
     fetchAndDisplayBoundaries();
     
-    // Cleanup function to remove the layer when component unmounts
+    // Cleanup function to remove all layers when component unmounts
     return () => {
       if (map) {
-        if (map.getLayer('artcc-boundaries')) {
-          map.removeLayer('artcc-boundaries');
+        // Remove all the layers we added
+        const layersToRemove = [
+          'artcc-boundaries',
+          'artcc-boundaries-fill',
+          'artcc-boundaries-outline',
+          'global-gray-overlay'
+        ];
+        
+        for (const layer of layersToRemove) {
+          if (map.getLayer(layer)) {
+            map.removeLayer(layer);
+          }
         }
-        if (map.getLayer('artcc-boundaries-fill')) {
-          map.removeLayer('artcc-boundaries-fill');
-        }
+        
+        // Remove the source
         if (map.getSource('artcc-boundaries')) {
           map.removeSource('artcc-boundaries');
         }
