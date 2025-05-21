@@ -270,8 +270,12 @@ export default function TabbedNotificationPanel({
                   <span>{source.name}</span>
                   <Badge 
                     variant={
-                      source.status === 'online' ? 'success' : 
-                      source.status === 'degraded' ? 'warning' : 'destructive'
+                      source.status === 'online' ? 'default' : 
+                      source.status === 'degraded' ? 'secondary' : 'destructive'
+                    }
+                    className={
+                      source.status === 'online' ? 'bg-green-500 hover:bg-green-600' : 
+                      source.status === 'degraded' ? 'bg-amber-500 hover:bg-amber-600' : ''
                     }
                   >
                     {source.status.charAt(0).toUpperCase() + source.status.slice(1)}

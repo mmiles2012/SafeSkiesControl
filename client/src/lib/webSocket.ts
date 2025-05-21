@@ -1,215 +1,252 @@
-// WebSocket client for real-time updates
+// WebSocket client for real-time data updates
 
-import { Aircraft, CollisionAlert, AirspaceAlert, Notification, DataSource } from "../types/aircraft";
+import { Aircraft, Notification } from '@/types/aircraft';
 
-type MessageHandler = (data: any) => void;
+// Define event callback types
+type AircraftUpdateCallback = (aircraft: Aircraft[]) => void;
+type SingleAircraftUpdateCallback = (aircraft: Aircraft) => void;
+type NotificationCallback = (notification: Notification) => void;
+type CollisionAlertCallback = (aircraftIds: number[], timeToCollision: number, severity: string) => void;
+type AirspaceAlertCallback = (aircraftId: number, restrictionId: number, restrictionType: string) => void;
+type ConnectionStatusCallback = (status: 'connected' | 'disconnected' | 'error') => void;
 
 class WebSocketClient {
   private socket: WebSocket | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
-  private pingInterval: NodeJS.Timeout | null = null;
-  private messageHandlers: Map<string, MessageHandler[]> = new Map();
-  private _isConnected = false;
-  
-  // Initialize the WebSocket connection
-  connect() {
-    if (this.socket) {
+  private isConnecting = false;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 3000; // 3 seconds initially
+
+  // Event listeners
+  private aircraftUpdateListeners: AircraftUpdateCallback[] = [];
+  private singleAircraftUpdateListeners: SingleAircraftUpdateCallback[] = [];
+  private notificationListeners: NotificationCallback[] = [];
+  private collisionAlertListeners: CollisionAlertCallback[] = [];
+  private airspaceAlertListeners: AirspaceAlertCallback[] = [];
+  private connectionStatusListeners: ConnectionStatusCallback[] = [];
+
+  // Connection method
+  connect(): void {
+    if (this.socket?.readyState === WebSocket.OPEN || this.isConnecting) {
       return;
     }
+
+    this.isConnecting = true;
+
+    // Setup WebSocket connection with proper protocol detection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    console.log('Connecting to WebSocket at:', wsUrl);
     
     try {
-      // Create WebSocket with correct URL format for Replit
-      const host = window.location.host;
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${host}/ws`;
-      
-      console.log("Connecting to WebSocket at:", wsUrl);
       this.socket = new WebSocket(wsUrl);
       
       this.socket.onopen = () => {
-        console.log("WebSocket connected");
-        this._isConnected = true;
+        console.log('WebSocket connected');
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+        this.resetReconnectDelay();
         
-        // Clear any reconnect timer
-        if (this.reconnectTimer) {
-          clearTimeout(this.reconnectTimer);
-          this.reconnectTimer = null;
-        }
+        // Send a ping to verify connection
+        this.sendMessage('ping');
         
-        // Send a ping to the server
-        this.send('ping', {});
-        
-        // Send a ping every 30 seconds to keep the connection alive
-        this.pingInterval = setInterval(() => {
-          if (this._isConnected) {
-            this.send('ping', {});
-          }
-        }, 30000);
+        // Notify listeners of connection
+        this.notifyConnectionStatusListeners('connected');
       };
       
       this.socket.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
-          this.handleMessage(message);
+          const data = JSON.parse(event.data);
+          
+          // Handle different message types
+          switch (data.type) {
+            case 'aircraft_updates':
+              this.notifyAircraftUpdateListeners(data.aircraft);
+              break;
+            case 'aircraft_update':
+              this.notifySingleAircraftUpdateListeners(data.aircraft);
+              break;
+            case 'notification':
+              this.notifyNotificationListeners(data.notification);
+              break;
+            case 'collision_alert':
+              this.notifyCollisionAlertListeners(
+                data.aircraftIds,
+                data.timeToCollision,
+                data.severity
+              );
+              break;
+            case 'airspace_alert':
+              this.notifyAirspaceAlertListeners(
+                data.aircraftId,
+                data.restrictionId,
+                data.restrictionType
+              );
+              break;
+            case 'pong':
+              // Handle pong - could update last response time
+              break;
+            default:
+              console.log('Unhandled WebSocket message type:', data.type);
+          }
         } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
+          console.error('Error parsing WebSocket message:', error);
         }
       };
       
       this.socket.onclose = () => {
-        console.log("WebSocket disconnected");
-        this._isConnected = false;
+        console.log('WebSocket disconnected');
+        this.isConnecting = false;
         this.socket = null;
         
-        // Clear ping interval
-        if (this.pingInterval) {
-          clearInterval(this.pingInterval);
-          this.pingInterval = null;
-        }
+        // Notify listeners of disconnection
+        this.notifyConnectionStatusListeners('disconnected');
         
-        // Attempt to reconnect after 3 seconds
-        this.reconnectTimer = setTimeout(() => {
-          this.connect();
-        }, 3000);
+        // Attempt to reconnect if we haven't exceeded max attempts
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.scheduleReconnect();
+        }
       };
       
       this.socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
+        console.error('WebSocket error:', error);
+        this.isConnecting = false;
+        
+        // Notify listeners of error
+        this.notifyConnectionStatusListeners('error');
       };
     } catch (error) {
-      console.error("Error creating WebSocket:", error);
-      // Try reconnecting after error
-      this.reconnectTimer = setTimeout(() => {
-        this.connect();
-      }, 5000);
-    }
-  }
-  
-  // Check if the WebSocket is connected
-  isConnected() {
-    return this._isConnected;
-  }
-  
-  // Subscribe to a specific message type
-  subscribe<T>(type: string, handler: (data: T) => void) {
-    if (!this.messageHandlers.has(type)) {
-      this.messageHandlers.set(type, []);
-    }
-    
-    this.messageHandlers.get(type)!.push(handler as MessageHandler);
-    
-    // If we're already connected, send a subscribe message
-    if (this._isConnected) {
-      this.send('subscribe', { channel: type });
-    }
-    
-    // Return unsubscribe function
-    return () => {
-      const handlers = this.messageHandlers.get(type);
-      if (handlers) {
-        const index = handlers.indexOf(handler as MessageHandler);
-        if (index >= 0) {
-          handlers.splice(index, 1);
-        }
+      console.error('Error creating WebSocket:', error);
+      this.isConnecting = false;
+      
+      // Notify listeners of error
+      this.notifyConnectionStatusListeners('error');
+      
+      // Attempt to reconnect if we haven't exceeded max attempts
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.scheduleReconnect();
       }
-    };
-  }
-  
-  // Send a message to the server
-  send(type: string, data: any) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.warn("WebSocket not connected, can't send message");
-      return false;
     }
-    
-    this.socket.send(JSON.stringify({ type, data }));
-    return true;
   }
-  
-  // Handle incoming messages
-  private handleMessage(message: { type: string; data: any }) {
-    // Handle pong message specially for ping-pong
-    if (message.type === 'pong') {
-      // Could update a lastPong timestamp
+
+  // Send a message to the server
+  sendMessage(message: string | object): void {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot send message, WebSocket is not connected');
       return;
     }
     
-    // Dispatch message to registered handlers
-    const handlers = this.messageHandlers.get(message.type);
-    if (handlers) {
-      handlers.forEach(handler => {
-        try {
-          handler(message.data);
-        } catch (error) {
-          console.error(`Error in ${message.type} handler:`, error);
-        }
-      });
-    }
+    const payload = typeof message === 'string' ? message : JSON.stringify(message);
+    this.socket.send(payload);
   }
-  
-  // Close the WebSocket connection
-  disconnect() {
+
+  // Disconnect from the server
+  disconnect(): void {
     if (this.socket) {
       this.socket.close();
       this.socket = null;
     }
     
+    // Clear any pending reconnect
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
+  }
+
+  // Schedule a reconnection attempt
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
     }
     
-    this._isConnected = false;
+    this.reconnectAttempts++;
+    const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1);
+    console.log(`Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
+    
+    this.reconnectTimer = setTimeout(() => {
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      this.connect();
+    }, delay);
+  }
+
+  // Reset the reconnect delay to the initial value
+  private resetReconnectDelay(): void {
+    this.reconnectDelay = 3000;
+  }
+
+  // Event notification methods
+  private notifyAircraftUpdateListeners(aircraft: Aircraft[]): void {
+    this.aircraftUpdateListeners.forEach(listener => listener(aircraft));
   }
   
-  // Subscribe to aircraft updates
-  onAircraftUpdates(handler: (aircraft: Aircraft[]) => void) {
-    return this.subscribe<{aircraft: Aircraft[]}>('aircraft_update', data => {
-      handler(data.aircraft);
-    });
+  private notifySingleAircraftUpdateListeners(aircraft: Aircraft): void {
+    this.singleAircraftUpdateListeners.forEach(listener => listener(aircraft));
   }
   
-  // Subscribe to single aircraft updates
-  onSingleAircraftUpdate(handler: (aircraft: Aircraft) => void) {
-    return this.subscribe<{aircraft: Aircraft}>('single_aircraft_update', data => {
-      handler(data.aircraft);
-    });
+  private notifyNotificationListeners(notification: Notification): void {
+    this.notificationListeners.forEach(listener => listener(notification));
   }
   
-  // Subscribe to new notifications
-  onNotification(handler: (notification: Notification) => void) {
-    return this.subscribe<{notification: Notification}>('notification', data => {
-      handler(data.notification);
-    });
+  private notifyCollisionAlertListeners(aircraftIds: number[], timeToCollision: number, severity: string): void {
+    this.collisionAlertListeners.forEach(listener => listener(aircraftIds, timeToCollision, severity));
   }
   
-  // Subscribe to data source updates
-  onDataSourceUpdate(handler: (dataSources: DataSource[]) => void) {
-    return this.subscribe<{dataSources: DataSource[]}>('data_source_update', data => {
-      handler(data.dataSources);
-    });
+  private notifyAirspaceAlertListeners(aircraftId: number, restrictionId: number, restrictionType: string): void {
+    this.airspaceAlertListeners.forEach(listener => listener(aircraftId, restrictionId, restrictionType));
   }
   
-  // Subscribe to collision alerts
-  onCollisionAlert(handler: (alert: CollisionAlert) => void) {
-    return this.subscribe<CollisionAlert>('collision_alert', data => {
-      handler(data);
-    });
+  private notifyConnectionStatusListeners(status: 'connected' | 'disconnected' | 'error'): void {
+    this.connectionStatusListeners.forEach(listener => listener(status));
+  }
+
+  // Event subscription methods
+  onAircraftUpdates(callback: AircraftUpdateCallback): () => void {
+    this.aircraftUpdateListeners.push(callback);
+    return () => {
+      this.aircraftUpdateListeners = this.aircraftUpdateListeners.filter(listener => listener !== callback);
+    };
   }
   
-  // Subscribe to airspace alerts
-  onAirspaceAlert(handler: (alert: AirspaceAlert) => void) {
-    return this.subscribe<AirspaceAlert>('airspace_alert', data => {
-      handler(data);
-    });
+  onSingleAircraftUpdate(callback: SingleAircraftUpdateCallback): () => void {
+    this.singleAircraftUpdateListeners.push(callback);
+    return () => {
+      this.singleAircraftUpdateListeners = this.singleAircraftUpdateListeners.filter(listener => listener !== callback);
+    };
+  }
+  
+  onNotification(callback: NotificationCallback): () => void {
+    this.notificationListeners.push(callback);
+    return () => {
+      this.notificationListeners = this.notificationListeners.filter(listener => listener !== callback);
+    };
+  }
+  
+  onCollisionAlert(callback: CollisionAlertCallback): () => void {
+    this.collisionAlertListeners.push(callback);
+    return () => {
+      this.collisionAlertListeners = this.collisionAlertListeners.filter(listener => listener !== callback);
+    };
+  }
+  
+  onAirspaceAlert(callback: AirspaceAlertCallback): () => void {
+    this.airspaceAlertListeners.push(callback);
+    return () => {
+      this.airspaceAlertListeners = this.airspaceAlertListeners.filter(listener => listener !== callback);
+    };
+  }
+  
+  onConnectionStatus(callback: ConnectionStatusCallback): () => void {
+    this.connectionStatusListeners.push(callback);
+    return () => {
+      this.connectionStatusListeners = this.connectionStatusListeners.filter(listener => listener !== callback);
+    };
   }
 }
 
-// Create and export the WebSocket client instance
-export const wsClient = new WebSocketClient();
+// Create a singleton instance
+const wsClient = new WebSocketClient();
+
 export default wsClient;

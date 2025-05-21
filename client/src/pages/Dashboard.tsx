@@ -34,7 +34,9 @@ const Dashboard = () => {
     selectAircraft,
     filters,
     updateFilters,
-    generateSampleData
+    dataMode,
+    toggleDataMode,
+    generateARTCCSampleData
   } = useAircraftData();
   
   // Get notifications
@@ -76,13 +78,43 @@ const Dashboard = () => {
   };
   
   // Handle ARTCC selection
-  const handleARTCCChange = (artccId: string) => {
+  const handleARTCCChange = async (artccId: string) => {
     setSelectedARTCC(artccId);
     filterByARTCC(artccId);
+    
+    // When ARTCC changes, update the sample data for that region if in sample mode
+    if (dataMode === 'sample') {
+      try {
+        await generateARTCCSampleData(artccId);
+      } catch (error) {
+        console.error('Error generating sample data for new ARTCC:', error);
+      }
+    }
+    
     toast({
       title: `Switched to ${artccId} airspace`,
       duration: 2000
     });
+  };
+  
+  // Handle data mode toggle (sample/live)
+  const handleDataModeToggle = async (newMode: 'sample' | 'live') => {
+    try {
+      await toggleDataMode(newMode, selectedARTCC);
+      
+      toast({
+        title: `Switched to ${newMode} data mode`,
+        description: newMode === 'sample' ? 'Using generated aircraft data' : 'Using live FlightAware data',
+        duration: 3000
+      });
+    } catch (error) {
+      toast({
+        title: `Failed to switch to ${newMode} data`,
+        description: 'An error occurred while changing data sources',
+        variant: 'destructive',
+        duration: 5000
+      });
+    }
   };
   
   // Handle aircraft detail modal close
@@ -109,12 +141,12 @@ const Dashboard = () => {
     }
   }, [params, aircraft, selectAircraft]);
 
-  // Generate sample data on first load
+  // Generate ARTCC-specific sample data on first load
   useEffect(() => {
     const createSampleData = async () => {
       try {
-        console.log("Generating sample aircraft data");
-        await generateSampleData();
+        console.log(`Generating sample aircraft data for ${selectedARTCC}`);
+        await generateARTCCSampleData(selectedARTCC);
         console.log("Sample data generated");
       } catch (error) {
         console.error("Error generating sample data:", error);
@@ -124,7 +156,7 @@ const Dashboard = () => {
     if (!aircraftLoading && aircraft.length === 0) {
       createSampleData();
     }
-  }, [aircraftLoading, aircraft.length, generateSampleData]);
+  }, [aircraftLoading, aircraft.length, generateARTCCSampleData, selectedARTCC]);
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
@@ -135,6 +167,8 @@ const Dashboard = () => {
         dataSources={dataSources}
         onOpenSettings={() => setShowMapSettings(true)}
         onOpenFilters={() => setShowFilters(true)}
+        dataMode={dataMode}
+        onToggleDataMode={handleDataModeToggle}
       />
       
       <main className="flex flex-1 overflow-hidden">

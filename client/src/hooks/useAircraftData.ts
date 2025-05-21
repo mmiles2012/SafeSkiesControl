@@ -9,6 +9,7 @@ import wsClient from "../lib/webSocket";
 export function useAircraftData() {
   const queryClient = useQueryClient();
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
+  const [dataMode, setDataMode] = useState<'sample' | 'live'>('sample');
   const [filters, setFilters] = useState<AircraftFilters>({
     verificationStatus: "all",
     needsAssistance: undefined,
@@ -58,15 +59,67 @@ export function useAircraftData() {
     };
   }, [queryClient, selectedAircraft]);
   
-  // Generate sample aircraft
-  const generateSampleData = useCallback(async () => {
+  // Generate sample aircraft for specific ARTCC regions
+  const generateARTCCSampleData = useCallback(async (artccId: string) => {
     try {
-      await generateSampleAircraft(10);
-      refetch();
+      const response = await fetch('/api/sample-data/artcc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ artccIds: [artccId] })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate ARTCC sample data');
+      }
+      
+      await refetch();
+      setDataMode('sample');
+      return await response.json();
     } catch (error) {
-      console.error("Error generating sample data:", error);
+      console.error("Error generating ARTCC sample data:", error);
+      throw error;
     }
   }, [refetch]);
+  
+  // Fetch live data from FlightAware
+  const fetchLiveData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/adsb/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch live flight data');
+      }
+      
+      await refetch();
+      setDataMode('live');
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching live data:", error);
+      throw error;
+    }
+  }, [refetch]);
+  
+  // Toggle between sample and live data
+  const toggleDataMode = useCallback(async (newMode: 'sample' | 'live', artccId: string) => {
+    try {
+      if (newMode === 'sample') {
+        await generateARTCCSampleData(artccId);
+      } else {
+        await fetchLiveData();
+      }
+      return true;
+    } catch (error) {
+      console.error(`Error toggling to ${newMode} data:`, error);
+      return false;
+    }
+  }, [generateARTCCSampleData, fetchLiveData]);
   
   // Apply filters to aircraft data
   const filteredAircraft = useCallback(() => {
@@ -133,7 +186,10 @@ export function useAircraftData() {
     selectAircraft,
     filters,
     updateFilters,
-    generateSampleData,
+    dataMode,
+    toggleDataMode,
+    generateARTCCSampleData,
+    fetchLiveData,
     refetch
   };
 }
