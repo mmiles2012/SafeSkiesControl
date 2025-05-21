@@ -32,6 +32,7 @@ const MapView: React.FC<MapViewProps> = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [showKansasCityView, setShowKansasCityView] = useState(true);
+  // Sync the ARTCC selection with props
   const [selectedARTCC, setSelectedARTCC] = useState("ZKC"); // Default to Kansas City ARTCC
   
   // Available ARTCC centers
@@ -293,7 +294,7 @@ const MapView: React.FC<MapViewProps> = ({
         
         {mapLoaded && mapInstance && (
           <BoundaryLayer 
-            facilityId="ZKC" 
+            facilityId={selectedARTCC} 
             showKansasCityView={showKansasCityView}
             visible={true}
           />
