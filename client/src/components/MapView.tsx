@@ -142,15 +142,29 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, [aircraft]);
 
+  // Track markers for proper cleanup
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupsRef = useRef<mapboxgl.Popup[]>([]);
+  
   // Update markers when aircraft data changes
   useEffect(() => {
     if (!mapLoaded || !mapRef.current || aircraft.length === 0) return;
     
     console.log('Updating aircraft markers');
     
-    // Remove existing markers
-    const markers = document.querySelectorAll('.mapboxgl-marker');
-    markers.forEach(marker => marker.remove());
+    // Remove existing markers and popups properly
+    if (markersRef.current.length > 0) {
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+    }
+    
+    if (popupsRef.current.length > 0) {
+      popupsRef.current.forEach(popup => popup.remove());
+      popupsRef.current = [];
+    }
+    
+    // Clean up any remaining popups that might be stuck
+    document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
     
     // Add new markers
     aircraft.forEach(a => {
@@ -175,8 +189,9 @@ const MapView: React.FC<MapViewProps> = ({
       // Create popup with basic info
       const popup = new mapboxgl.Popup({
         closeButton: false,
-        closeOnClick: false,
-        className: 'aircraft-popup'
+        closeOnClick: true, // Make popup close when clicked
+        className: 'aircraft-popup',
+        offset: 25 // Offset from marker
       }).setHTML(`
         <div class="px-2 py-1 text-xs font-medium">
           <div class="font-bold">${a.callsign}</div>
@@ -185,12 +200,18 @@ const MapView: React.FC<MapViewProps> = ({
         </div>
       `);
       
+      // Add popup to tracking array
+      popupsRef.current.push(popup);
+      
       // Add marker to map
-      new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker(el)
         .setLngLat([a.longitude, a.latitude])
         .setPopup(popup)
         .addTo(mapRef.current!);
-        
+      
+      // Add marker to tracking array
+      markersRef.current.push(marker);
+      
       // Add click handler to select aircraft
       el.addEventListener('click', () => {
         onSelectAircraft(a);
