@@ -70,9 +70,9 @@ export async function fetchDataSources() {
 }
 
 // Run collision detection
-export async function detectCollisions() {
+export async function detectCollisions(aircraft: Aircraft[] = []) {
   try {
-    const response = await apiRequest("POST", "/api/ml/detect-collisions");
+    const response = await apiRequest("POST", "/api/ml/detect-collisions", { aircraft });
     const data = await response.json();
     return data;
   } catch (error) {
@@ -83,9 +83,9 @@ export async function detectCollisions() {
 }
 
 // Check for airspace violations
-export async function detectAirspaceViolations() {
+export async function detectAirspaceViolations(aircraft: Aircraft[] = []) {
   try {
-    const response = await apiRequest("POST", "/api/ml/detect-airspace-violations");
+    const response = await apiRequest("POST", "/api/ml/detect-airspace-violations", { aircraft });
     const data = await response.json();
     return data;
   } catch (error) {

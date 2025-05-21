@@ -35,11 +35,21 @@ const ArtccBoundaries: React.FC<BoundaryProps> = ({
         // Handle both formats (plain GeoJSON or structured response with metadata)
         const geoJSON = data.kcBoundary || data;
         
-        // Check if the layer already exists, remove it if it does
-        if (map.getLayer('artcc-boundaries')) {
-          map.removeLayer('artcc-boundaries');
+        // Check if the layers already exist, remove them if they do
+        const layersToRemove = [
+          'artcc-boundaries',
+          'artcc-boundaries-fill',
+          'artcc-boundaries-outline',
+          'global-gray-overlay'
+        ];
+        
+        for (const layer of layersToRemove) {
+          if (map.getLayer(layer)) {
+            map.removeLayer(layer);
+          }
         }
         
+        // Remove the source if it exists
         if (map.getSource('artcc-boundaries')) {
           map.removeSource('artcc-boundaries');
         }

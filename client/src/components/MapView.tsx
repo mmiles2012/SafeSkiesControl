@@ -100,7 +100,9 @@ const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     const checkCollisions = async () => {
       try {
-        await detectCollisions(aircraft);
+        if (aircraft.length > 0) {
+          await detectCollisions(aircraft);
+        }
       } catch (error) {
         console.error('Error detecting collisions:', error);
       }
@@ -121,7 +123,9 @@ const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     const checkAirspaceViolations = async () => {
       try {
-        await detectAirspaceViolations(aircraft);
+        if (aircraft.length > 0) {
+          await detectAirspaceViolations(aircraft);
+        }
       } catch (error) {
         console.error('Error detecting airspace violations:', error);
       }
@@ -235,7 +239,7 @@ const MapView: React.FC<MapViewProps> = ({
           }}
           onToggleLayers={() => {/* Toggle layers will be implemented later */}}
           settings={mapSettings}
-          onUpdateSettings={setMapSettings}
+          onUpdateSettings={(settings) => setMapSettings(prevSettings => ({...prevSettings, ...settings}))}
         />
         
         <div className="absolute right-4 top-4 flex items-center space-x-2">
