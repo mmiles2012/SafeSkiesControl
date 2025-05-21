@@ -373,10 +373,6 @@ const MapView: React.FC<MapViewProps> = ({
                 <span className="inline-block w-3 h-3 rounded-full bg-[hsl(var(--unverified))] mr-1.5"></span>
                 <span>Unverified: {verificationCounts.unverified}</span>
               </div>
-              <div className="flex items-center px-2 py-1 rounded-md bg-muted/50">
-                <span className="inline-block w-3 h-3 rounded-full bg-green-500/60 mr-1.5"></span>
-                <span>GNSS: {dataSources.find(d => d.name === 'GNSS')?.status === 'online' ? 'Active' : 'Inactive'}</span>
-              </div>
             </div>
           </div>
         </div>

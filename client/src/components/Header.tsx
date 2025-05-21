@@ -36,7 +36,8 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showLiveDataDialog, setShowLiveDataDialog] = useState(false);
   const [isFetchingLiveData, setIsFetchingLiveData] = useState(false);
-  const [isGeneratingKCFlights, setIsGeneratingKCFlights] = useState(false);
+  const [isGeneratingSampleData, setIsGeneratingSampleData] = useState(false);
+  const [isUsingSampleData, setIsUsingSampleData] = useState(true); // Default to sample data
   const [syncResult, setSyncResult] = useState<{
     success: boolean;
     message: string;
@@ -50,6 +51,7 @@ const Header: React.FC<HeaderProps> = ({
   const fetchLiveFlightData = async () => {
     setIsFetchingLiveData(true);
     setSyncResult(null);
+    setIsUsingSampleData(false);
     
     try {
       const response = await axios.post('/api/adsb/sync');
@@ -60,8 +62,12 @@ const Header: React.FC<HeaderProps> = ({
         description: `Successfully loaded ${response.data.aircraftCount} aircraft from FlightAware.`,
         variant: "default",
       });
-    } catch (error) {
-      console.error('Error fetching live flight data:', error);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/aircraft'] });
+    } catch (err) {
+      console.error('Error fetching live flight data:', err);
+      const error = err as any;
       setSyncResult({
         success: false,
         message: error instanceof Error ? error.message : 'Failed to fetch live flight data'
@@ -74,6 +80,7 @@ const Header: React.FC<HeaderProps> = ({
           description: "Live flight data unavailable. Displaying sample aircraft instead.",
           variant: "default",
         });
+        setIsUsingSampleData(true);
       } else {
         toast({
           title: "Error loading data",
@@ -86,37 +93,57 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
   
-  // Function to generate Kansas City flights
-  const generateKansasCityFlights = async () => {
+  // Function to generate sample data for all ARTCC regions
+  const generateSampleData = async () => {
     try {
-      setIsGeneratingKCFlights(true);
+      setIsGeneratingSampleData(true);
+      setIsUsingSampleData(true);
       
-      const response = await axios.post('/api/kcflights/generate');
+      // Generate sample data for each ARTCC region
+      const artccRegions = ['ZKC', 'ZDV', 'ZOA', 'ZNY', 'ZMA'];
+      const response = await axios.post('/api/sample-data/generate', { artccRegions });
       
       if (response.data.success) {
         queryClient.invalidateQueries({ queryKey: ['/api/aircraft'] });
         
         toast({
-          title: "Kansas City Flights Generated",
-          description: "Created sample aircraft within Kansas City ARTCC boundary.",
+          title: "Sample Data Generated",
+          description: `Created ${response.data.aircraftCount} sample aircraft across all ARTCC regions.`,
         });
       } else {
         toast({
           title: "Generation Failed",
-          description: "Could not generate Kansas City flights. Please try again.",
+          description: "Could not generate sample data. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Error generating KC flights:', error);
+      console.error('Error generating sample data:', error);
       
       toast({
         title: "Generation Failed",
-        description: "Could not generate Kansas City flights. Please try again.",
+        description: "Could not generate sample data. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsGeneratingKCFlights(false);
+      setIsGeneratingSampleData(false);
+    }
+  };
+  
+  // Function to toggle between sample and live data
+  const toggleDataSource = () => {
+    setIsUsingSampleData(!isUsingSampleData);
+    
+    if (!isUsingSampleData) {
+      // Switching to sample data
+      generateSampleData();
+      toast({
+        title: "Using Sample Data",
+        description: "Switched to sample aircraft data.",
+      });
+    } else {
+      // Switching to live data - show the live data dialog
+      setShowLiveDataDialog(true);
     }
   };
   
@@ -186,10 +213,14 @@ const Header: React.FC<HeaderProps> = ({
               Live Data
             </button>
             <button 
-              onClick={generateKansasCityFlights}
-              disabled={isGeneratingKCFlights}
-              className="px-3 py-1.5 rounded-md bg-amber-600 text-white hover:bg-amber-700 text-sm font-medium transition-colors flex items-center">
-              {isGeneratingKCFlights ? (
+              onClick={toggleDataSource}
+              disabled={isGeneratingSampleData || isFetchingLiveData}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center ${
+                isUsingSampleData 
+                  ? 'bg-amber-600 text-white hover:bg-amber-700' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}>
+              {isGeneratingSampleData ? (
                 <>
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   Generating...
@@ -197,10 +228,11 @@ const Header: React.FC<HeaderProps> = ({
               ) : (
                 <>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
-                    <path d="M12 1v22"/>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
                   </svg>
-                  KC Flights
+                  {isUsingSampleData ? 'Sample Data' : 'Live Data'}
                 </>
               )}
             </button>
