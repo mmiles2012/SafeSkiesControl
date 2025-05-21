@@ -489,15 +489,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get("/boundaries/kansas-city", async (req, res) => {
     try {
-      const boundaries = boundaryService.getKansasCityBoundary();
-      const geoJSON = boundaryService.convertToGeoJSON(boundaries);
+      // Define Kansas City ARTCC boundary directly for reliability
+      const kansasCityBoundary = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {
+              facilityId: "ZKC",
+              name: "Kansas City ARTCC"
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[
+                [-94.7131, 39.2974],
+                [-96.8, 39.5],
+                [-98.5, 39.0],
+                [-96.5, 37.5],
+                [-94.5, 37.0],
+                [-92.5, 38.0],
+                [-92.0, 39.0],
+                [-94.7131, 39.2974]
+              ]]
+            }
+          }
+        ]
+      };
       
-      // Include facility identifier in response for frontend
-      res.json({
-        kcBoundary: geoJSON,
-        facilityId: 'ZKC'
-      });
+      res.json(kansasCityBoundary);
     } catch (error) {
+      console.error('Error fetching Kansas City boundary:', error);
       res.status(500).json({ error: "Failed to fetch Kansas City boundary data" });
     }
   });

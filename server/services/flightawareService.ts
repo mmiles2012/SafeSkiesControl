@@ -80,6 +80,7 @@ export class FlightAwareService {
   /**
    * Fetch aircraft data from FlightAware AeroAPI
    * This method fetches live flight data from the AeroAPI focusing on the Kansas City ARTCC
+   * with improved rate limiting handling
    */
   private async fetchLiveFlights(): Promise<InsertAircraft[]> {
     if (!this.isConfigured) {
@@ -100,9 +101,24 @@ export class FlightAwareService {
       // Collect all flights from major airports in Kansas City ARTCC (ZKC)
       let allFlights: FlightAwareAircraft[] = [];
       
-      // Get flights for each airport in the KC ARTCC region
-      for (const airport of ZKC_AIRPORTS) {
+      // Track rate limit to avoid hitting limits
+      let remainingRequests = ZKC_AIRPORTS.length;
+      
+      // Implement staggered requests with delay to avoid rate limits
+      // Only request data for a subset of airports in each cycle
+      const priorityAirports = ZKC_AIRPORTS.slice(0, 3); // Only use top 3 airports to reduce API calls
+      
+      // Get flights for high-priority airports in the KC ARTCC region
+      for (const airport of priorityAirports) {
+        if (remainingRequests <= 0) {
+          console.log('Rate limit safety threshold reached, pausing requests');
+          break;
+        }
+        
         try {
+          // Delay between requests to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           // Query for flights departing from this airport
           const departures = await axios.get<FlightAwareResponse>(
             `${AEROAPI_BASE_URL}/airports/${airport}/flights/departures`,
@@ -116,30 +132,44 @@ export class FlightAwareService {
             }
           );
           
+          remainingRequests--;
+          
           if (departures.data.flights && departures.data.flights.length > 0) {
             allFlights = [...allFlights, ...departures.data.flights];
           }
           
-          // Query for flights arriving at this airport
-          const arrivals = await axios.get<FlightAwareResponse>(
-            `${AEROAPI_BASE_URL}/airports/${airport}/flights/arrivals`,
-            {
-              headers: {
-                'x-apikey': this.apiKey
-              },
-              params: {
-                max_pages: 1
+          // Only get arrivals if we haven't hit the limit
+          if (remainingRequests > 0) {
+            // Delay between requests
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Query for flights arriving at this airport
+            const arrivals = await axios.get<FlightAwareResponse>(
+              `${AEROAPI_BASE_URL}/airports/${airport}/flights/arrivals`,
+              {
+                headers: {
+                  'x-apikey': this.apiKey
+                },
+                params: {
+                  max_pages: 1
+                }
               }
+            );
+            
+            remainingRequests--;
+            
+            if (arrivals.data.flights && arrivals.data.flights.length > 0) {
+              allFlights = [...allFlights, ...arrivals.data.flights];
             }
-          );
-          
-          if (arrivals.data.flights && arrivals.data.flights.length > 0) {
-            allFlights = [...allFlights, ...arrivals.data.flights];
           }
           
           console.log(`Retrieved flights for ${airport}`);
           
-        } catch (airportError) {
+        } catch (airportError: any) {
+          if (airportError.response && airportError.response.status === 429) {
+            console.warn('FlightAware API rate limit reached, stopping requests');
+            break;
+          }
           console.warn(`Error fetching flights for airport ${airport}:`, airportError);
           // Continue with other airports
         }

@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "facilityId": "ZKC",
+        "name": "Kansas City ARTCC",
+        "description": "Kansas City Air Route Traffic Control Center"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-94.7131, 39.2974],
+          [-96.8, 39.5],
+          [-98.5, 39.0],
+          [-96.5, 37.5],
+          [-94.5, 37.0],
+          [-92.5, 38.0],
+          [-92.0, 39.0],
+          [-94.7131, 39.2974]
+        ]]
+      }
+    }
+  ]
+}

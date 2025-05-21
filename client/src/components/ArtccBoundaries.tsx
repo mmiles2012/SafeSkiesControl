@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useMapContext } from '../hooks/useMapContext';
-import { mapboxgl } from '../types/mapbox';
+import mapboxgl from 'mapbox-gl';
 
 interface BoundaryProps {
   facilityId?: string;
