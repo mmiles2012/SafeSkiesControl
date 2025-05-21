@@ -17,27 +17,39 @@ interface MapViewProps {
   selectedAircraft: Aircraft | null;
   onSelectAircraft: (aircraft: Aircraft) => void;
   dataSources: DataSource[];
+  onARTCCChange?: (artccId: string) => void;
 }
 
 const MapView: React.FC<MapViewProps> = ({
   aircraft,
   selectedAircraft,
   onSelectAircraft,
-  dataSources
+  dataSources,
+  onARTCCChange
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [showKansasCityView, setShowKansasCityView] = useState(true);
+  const [selectedARTCC, setSelectedARTCC] = useState("ZKC"); // Default to Kansas City ARTCC
   
+  // Available ARTCC centers
+  const artccOptions = [
+    { id: "ZKC", name: "Kansas City" },
+    { id: "ZDV", name: "Denver" },
+    { id: "ZOA", name: "Oakland" },
+    { id: "ZNY", name: "New York" },
+    { id: "ZMA", name: "Miami" }
+  ];
   const [mapSettings, setMapSettings] = useState<MapSettings>({
     showGrid: true,
     showRestrictions: true,
     showSectors: true,
     showVerifiedOnly: false,
     showLabels: true,
-    showFlightPaths: true
+    showFlightPaths: true,
+    showNOTAMs: true
   });
 
   // Fetch restrictions
@@ -303,16 +315,43 @@ const MapView: React.FC<MapViewProps> = ({
         />
         
         <div className="absolute right-4 top-4 flex items-center space-x-2 z-10">
-          <button
-            onClick={() => setShowKansasCityView(!showKansasCityView)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md ${
-              showKansasCityView 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-secondary hover:bg-secondary/80'
-            }`}
-          >
-            {showKansasCityView ? 'Kansas City View' : 'Show Kansas City'}
-          </button>
+          <div className="bg-background/90 dark:bg-card/90 p-1.5 rounded-lg shadow-md border border-border">
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium mr-2">ARTCC Zone:</span>
+                <select 
+                  value={selectedARTCC}
+                  onChange={(e) => {
+                    const newARTCC = e.target.value;
+                    setSelectedARTCC(newARTCC);
+                    // When changing ARTCC, update the view accordingly
+                    setShowKansasCityView(newARTCC === "ZKC");
+                    // Notify parent component about ARTCC change
+                    if (onARTCCChange) {
+                      onARTCCChange(newARTCC);
+                    }
+                  }}
+                  className="text-xs bg-muted px-2 py-1 rounded border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  {artccOptions.map(option => (
+                    <option key={option.id} value={option.id}>
+                      {option.id} - {option.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => setShowKansasCityView(!showKansasCityView)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md w-full ${
+                  showKansasCityView 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-secondary hover:bg-secondary/80'
+                }`}
+              >
+                {showKansasCityView ? 'Show Detailed View' : 'Show Overview'}
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="absolute left-4 top-20 bg-background/90 dark:bg-card/90 p-2 rounded-lg shadow-md border border-border">

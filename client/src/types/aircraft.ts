@@ -87,6 +87,27 @@ export interface AirspaceAlert {
   restrictionType: string;
 }
 
+export interface NOTAM {
+  id: number;
+  title: string;
+  message: string;
+  location: string; // ARTCC code or airport code
+  type: 'airport' | 'airspace' | 'navigation' | 'procedure' | 'other';
+  startDate: Date;
+  endDate?: Date;
+  isActive: boolean;
+  severity: 'high' | 'medium' | 'low';
+  affectedAltitude?: {
+    min: number;
+    max: number;
+  };
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+    radius?: number; // in nautical miles
+  };
+}
+
 export interface MapSettings {
   showGrid: boolean;
   showRestrictions: boolean;
@@ -94,4 +115,5 @@ export interface MapSettings {
   showVerifiedOnly: boolean;
   showLabels: boolean;
   showFlightPaths: boolean;
+  showNOTAMs: boolean;
 }
