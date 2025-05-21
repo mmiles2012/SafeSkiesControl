@@ -1,7 +1,7 @@
 // Types for aircraft data
 
 export type VerificationStatus = 'unverified' | 'partially_verified' | 'verified';
-export type VerificationSource = 'ADS-B' | 'radar' | 'GPS';
+export type VerificationSource = 'ADS-B' | 'radar' | 'GPS' | 'ground-radar' | 'GNSS';
 
 export interface Aircraft {
   id: number;
