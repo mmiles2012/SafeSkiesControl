@@ -45,9 +45,7 @@ class WebSocketClient {
       }
     
       console.log('Connecting to WebSocket at:', wsUrl);
-    } finally {
-    
-    try {
+      
       this.socket = new WebSocket(wsUrl);
       
       this.socket.onopen = () => {
