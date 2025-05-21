@@ -2,14 +2,7 @@ import { useState, useEffect } from 'react';
 import { Aircraft, DataSource } from '@/types/aircraft';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatAltitude, formatHeading, formatSpeed } from '@/lib/mapUtils';
-
-// Helper function to force remove all mapbox popups from the DOM
-const removeAllPopups = () => {
-  // Use a more specific selector to target Mapbox popups
-  document.querySelectorAll('.mapboxgl-popup').forEach(popup => {
-    popup.remove();
-  });
-};
+import { removeAllPopups, startPopupCleanupInterval } from '@/lib/popupUtils';
 
 interface AircraftDetailModalProps {
   aircraft: Aircraft;
@@ -57,19 +50,30 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
     // Remove all popups immediately when component mounts
     removeAllPopups();
     
-    // Create a cleanup interval to handle any persistent popups
-    const cleanupInterval = setInterval(removeAllPopups, 100);
+    // Start an aggressive cleanup process when modal is open
+    let stopCleanup: (() => void) | null = null;
     
-    // Only run the interval when the modal is open
-    if (!isOpen) {
-      clearInterval(cleanupInterval);
+    if (isOpen) {
+      // Run cleanup immediately
+      removeAllPopups();
+      
+      // Start a cleanup interval that runs every 100ms while modal is open
+      stopCleanup = startPopupCleanupInterval(100);
     }
     
-    // Clean up the interval when component unmounts
+    // Clean up on unmount or when modal closes
     return () => {
-      clearInterval(cleanupInterval);
-      // Force one more cleanup when unmounting
+      // Stop the interval if it was started
+      if (stopCleanup) {
+        stopCleanup();
+      }
+      
+      // Run multiple cleanups with delays to catch any popups that might appear
+      // during the modal closing animation
       removeAllPopups();
+      setTimeout(removeAllPopups, 50);
+      setTimeout(removeAllPopups, 200);
+      setTimeout(removeAllPopups, 400);
     };
   }, [isOpen]);
 
@@ -78,14 +82,12 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
       open={isOpen} 
       onOpenChange={(open) => {
         if (!open) {
-          // Force remove any remaining popups when modal closes
+          // Force super aggressive cleanup of any remaining popups when modal closes
           removeAllPopups();
-          
-          // Run cleanup multiple times with delays to catch any popups
-          // that might be created during animation
-          setTimeout(removeAllPopups, 50);
-          setTimeout(removeAllPopups, 150);
-          setTimeout(removeAllPopups, 300);
+          // Run multiple cleanup passes
+          for (let i = 1; i <= 10; i++) {
+            setTimeout(removeAllPopups, i * 50);
+          }
           
           onClose();
         }
