@@ -21,47 +21,47 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
   const { map } = useMapContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Function to create a proper polygon for the selected ARTCC
   const createARTCCPolygon = async () => {
     try {
       if (!map) return;
-      
+
       setLoading(true);
       setError(null);
-      
+
       console.log(`Creating ${facilityId} ARTCC boundary visualization`);
-      
+
       // Define the layers we'll create and need to remove if they exist
       const layersToRemove = [
         'artcc-boundary-fill',
         'artcc-boundary-outline',
         'artcc-boundary-background'
       ];
-      
+
       // Clean up any existing layers
       layersToRemove.forEach(layerId => {
-        if (map.getLayer(layerId)) {
+        if (map && map.getLayer && map.getLayer(layerId)) {
           map.removeLayer(layerId);
         }
       });
-      
+
       // Remove source if it exists
-      if (map.getSource('artcc-boundary')) {
+      if (map && map.getSource && map.getSource('artcc-boundary')) {
         map.removeSource('artcc-boundary');
       }
-      
+
       // Only proceed if the component is visible
       if (!visible) {
         setLoading(false);
         return;
       }
-      
+
       // Define ARTCC boundary coordinates based on facilityId
       let artccCoordinates = [];
       let artccCenter = [-96.0, 38.5]; // Default center (Kansas City)
       let artccZoom = 6; // Default zoom level
-      
+
       // Assign coordinates based on the selected ARTCC
       switch(facilityId) {
         case "ZKC": // Kansas City
@@ -177,7 +177,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
           artccCenter = [-96.0, 38.5];
           artccZoom = 6;
       }
-      
+
       // Define a GeoJSON object with the selected ARTCC boundary
       const artccBoundaryGeoJSON = {
         type: "FeatureCollection" as const,
@@ -195,20 +195,20 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
           }
         ]
       };
-      
+
       // Add the GeoJSON source for boundaries directly 
       map.addSource('artcc-boundary', {
         type: 'geojson',
         data: artccBoundaryGeoJSON
       });
-      
+
       // Fly to the selected ARTCC region with appropriate zoom
       map.flyTo({
         center: [artccCenter[0], artccCenter[1]] as [number, number],
         zoom: artccZoom,
         essential: true
       });
-      
+
       // Create appropriate boundary visualization based on view setting
       if (showKansasCityView) {
         // Add the ARTCC polygon fill layer with highlighted style
@@ -221,7 +221,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
             'fill-opacity': 0.1
           }
         });
-        
+
         // Add strong outline to make the boundary visible
         map.addLayer({
           id: 'artcc-boundary-outline',
@@ -244,7 +244,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
             'fill-opacity': 0.2
           }
         });
-        
+
         // Add outline to make the boundary visible
         map.addLayer({
           id: 'artcc-boundary-outline',
@@ -257,7 +257,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
           }
         });
       }
-      
+
       setLoading(false);
     } catch (err) {
       console.error('Error displaying boundary layer:', err);
@@ -265,7 +265,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
       setLoading(false);
     }
   };
-  
+
   // Effect to update the boundary when parameters change
   useEffect(() => {
     if (!map) return;
@@ -283,32 +283,32 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
     if (map.loaded && typeof map.loaded === 'function') {
       initBoundary();
     }
-    
+
     // Cleanup function
     return () => {
       if (!map) return;
-      
+
       // Remove the load event listener if it exists
       map.off('load', createARTCCPolygon);
-      
+
       const layersToRemove = [
         'artcc-boundary-fill',
         'artcc-boundary-outline',
         'artcc-boundary-background'
       ];
-      
+
       layersToRemove.forEach(layerId => {
-        if (map.getLayer(layerId)) {
+        if (map && map.getLayer && map.getLayer(layerId)) {
           map.removeLayer(layerId);
         }
       });
-      
-      if (map.getSource('artcc-boundary')) {
+
+      if (map && map.getSource && map.getSource('artcc-boundary')) {
         map.removeSource('artcc-boundary');
       }
     };
   }, [map, facilityId, showKansasCityView, visible]);
-  
+
   return (
     <div className="boundary-layer-component">
       {loading && <div className="hidden">Loading boundary data...</div>}
