@@ -270,11 +270,18 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
   useEffect(() => {
     if (!map) return;
 
-    // Wait for map to be fully loaded before adding layers
-    if (map.loaded()) {
-      createARTCCPolygon();
-    } else {
-      map.on('load', createARTCCPolygon);
+    const initBoundary = () => {
+      if (map.loaded()) {
+        createARTCCPolygon();
+      } else {
+        // If map isn't loaded yet, wait for it
+        map.once('load', createARTCCPolygon);
+      }
+    };
+
+    // Ensure we have a valid map instance
+    if (map.loaded && typeof map.loaded === 'function') {
+      initBoundary();
     }
     
     // Cleanup function
