@@ -40,16 +40,7 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
       ];
 
       // Clean up any existing layers
-      layersToRemove.forEach(layerId => {
-        if (map && map.getLayer && map.getLayer(layerId)) {
-          map.removeLayer(layerId);
-        }
-      });
 
-      // Remove source if it exists
-      if (map && map.getSource && map.getSource('artcc-boundary')) {
-        map.removeSource('artcc-boundary');
-      }
 
       // Only proceed if the component is visible
       if (!visible) {
