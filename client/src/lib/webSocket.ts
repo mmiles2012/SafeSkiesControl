@@ -44,7 +44,8 @@ class WebSocketClient {
         throw new Error('Invalid host for WebSocket connection');
       }
     
-    console.log('Connecting to WebSocket at:', wsUrl);
+      console.log('Connecting to WebSocket at:', wsUrl);
+    } finally {
     
     try {
       this.socket = new WebSocket(wsUrl);
