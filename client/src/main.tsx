@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import { Toaster } from '@/components/ui/toaster';
 
 // Add CSS for Mapbox GL
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -59,4 +63,11 @@ style.textContent = `
 
 document.head.appendChild(style);
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <App />
+      <Toaster />
+    </ThemeProvider>
+  </QueryClientProvider>
+);
