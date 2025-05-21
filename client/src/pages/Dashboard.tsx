@@ -7,11 +7,13 @@ import { useToast } from '@/hooks/use-toast';
 import AircraftDetailModal from '@/components/AircraftDetailModal';
 import { useAircraftData } from '@/hooks/useAircraftData';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useNOTAMs } from '@/hooks/useNOTAMs';
 import { useQuery } from '@tanstack/react-query';
 import { Aircraft, DataSource } from '@/types/aircraft';
 import FilterDialog from '@/components/FilterDialog';
 import MapSettings from '@/components/MapSettings';
 import { useParams, useLocation } from 'wouter';
+import NOTAMPanel from '@/components/NOTAMPanel';
 
 const Dashboard = () => {
   const [showAircraftDetail, setShowAircraftDetail] = useState(false);
@@ -19,6 +21,7 @@ const Dashboard = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [leftPanelMinimized, setLeftPanelMinimized] = useState(false);
   const [rightPanelMinimized, setRightPanelMinimized] = useState(false);
+  const [selectedARTCC, setSelectedARTCC] = useState("ZKC");
   const { toast } = useToast();
   const params = useParams<{ id: string }>();
   const [_, navigate] = useLocation();
@@ -42,6 +45,13 @@ const Dashboard = () => {
     resolveNotification
   } = useNotifications();
   
+  // Get NOTAMs data
+  const {
+    notams,
+    isLoading: notamsLoading,
+    filterByARTCC
+  } = useNOTAMs();
+  
   // Get data sources status
   const { data: dataSources = [] } = useQuery<DataSource[]>({
     queryKey: ['/api/data-sources'],
@@ -64,6 +74,16 @@ const Dashboard = () => {
     selectAircraft(aircraft);
     setShowAircraftDetail(true);
     navigate(`/aircraft/${aircraft.id}`);
+  };
+  
+  // Handle ARTCC selection
+  const handleARTCCChange = (artccId: string) => {
+    setSelectedARTCC(artccId);
+    filterByARTCC(artccId);
+    toast({
+      title: `Switched to ${artccId} airspace`,
+      duration: 2000
+    });
   };
   
   // Handle aircraft detail modal close
@@ -162,6 +182,7 @@ const Dashboard = () => {
             selectedAircraft={selectedAircraft}
             onSelectAircraft={handleSelectAircraft}
             dataSources={dataSources}
+            onARTCCChange={handleARTCCChange}
           />
         </div>
         
@@ -190,18 +211,27 @@ const Dashboard = () => {
                 </svg>
               )}
             </button>
-            <NotificationPanel 
-              notifications={filteredNotifications}
-              isLoading={notificationsLoading}
-              onResolveNotification={resolveNotification}
-              onSelectAircraftFromNotification={(aircraftId) => {
-                const aircraft = filteredAircraft.find(a => a.id === aircraftId);
-                if (aircraft) {
-                  handleSelectAircraft(aircraft);
-                }
-              }}
-              dataSources={dataSources}
-            />
+            <div className="space-y-4 p-2">
+              <NotificationPanel 
+                notifications={filteredNotifications}
+                isLoading={notificationsLoading}
+                onResolveNotification={resolveNotification}
+                onSelectAircraftFromNotification={(aircraftId) => {
+                  const aircraft = filteredAircraft.find(a => a.id === aircraftId);
+                  if (aircraft) {
+                    handleSelectAircraft(aircraft);
+                  }
+                }}
+                dataSources={dataSources}
+              />
+              
+              {/* NOTAM panel */}
+              <NOTAMPanel 
+                notams={notams}
+                isLoading={notamsLoading}
+                selectedARTCC={selectedARTCC}
+              />
+            </div>
           </div>
         </div>
       </main>
