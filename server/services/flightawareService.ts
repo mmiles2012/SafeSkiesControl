@@ -4,11 +4,13 @@ import { storage } from '../storage';
 import { dataSourceService } from './dataSourceService';
 import { aircraftService } from './aircraftService';
 
-// FlightAware AeroAPI base URL and endpoint
+// FlightAware AeroAPI base URL and endpoints
 const AEROAPI_BASE_URL = 'https://aeroapi.flightaware.com/aeroapi';
 const SEARCH_ENDPOINT = '/flights/search';
-// Alternatively can use scheduled flights endpoint
-const SCHEDULED_ENDPOINT = '/schedules/from/KATL/to/KJFK';
+// Kansas City ARTCC airports - major airports in the ZKC ARTCC region
+const ZKC_AIRPORTS = ['KMCI', 'KICT', 'KMKC', 'KSTL', 'KSLN', 'KTUL', 'KOKC'];
+// Using the search endpoint with our Kansas City airports
+const KC_SEARCH_ENDPOINT = '/flights/search';
 
 interface FlightAwareAircraft {
   ident: string;
@@ -77,7 +79,7 @@ export class FlightAwareService {
 
   /**
    * Fetch aircraft data from FlightAware AeroAPI
-   * This method fetches live flight data from the AeroAPI
+   * This method fetches live flight data from the AeroAPI focusing on the Kansas City ARTCC
    */
   private async fetchLiveFlights(): Promise<InsertAircraft[]> {
     if (!this.isConfigured) {
@@ -93,27 +95,65 @@ export class FlightAwareService {
         });
       }
 
-      console.log('Fetching live flight data from FlightAware AeroAPI...');
+      console.log('Fetching live flight data for Kansas City ARTCC from FlightAware...');
       
-      // Make API request to the scheduled flights endpoint which is more reliable
-      const response = await axios.get<FlightAwareResponse>(
-        `${AEROAPI_BASE_URL}${SCHEDULED_ENDPOINT}`,
-        {
-          headers: {
-            'x-apikey': this.apiKey
+      // Collect all flights from major airports in Kansas City ARTCC (ZKC)
+      let allFlights: FlightAwareAircraft[] = [];
+      
+      // Get flights for each airport in the KC ARTCC region
+      for (const airport of ZKC_AIRPORTS) {
+        try {
+          // Query for flights departing from this airport
+          const departures = await axios.get<FlightAwareResponse>(
+            `${AEROAPI_BASE_URL}/airports/${airport}/flights/departures`,
+            {
+              headers: {
+                'x-apikey': this.apiKey
+              },
+              params: {
+                max_pages: 1
+              }
+            }
+          );
+          
+          if (departures.data.flights && departures.data.flights.length > 0) {
+            allFlights = [...allFlights, ...departures.data.flights];
           }
+          
+          // Query for flights arriving at this airport
+          const arrivals = await axios.get<FlightAwareResponse>(
+            `${AEROAPI_BASE_URL}/airports/${airport}/flights/arrivals`,
+            {
+              headers: {
+                'x-apikey': this.apiKey
+              },
+              params: {
+                max_pages: 1
+              }
+            }
+          );
+          
+          if (arrivals.data.flights && arrivals.data.flights.length > 0) {
+            allFlights = [...allFlights, ...arrivals.data.flights];
+          }
+          
+          console.log(`Retrieved flights for ${airport}`);
+          
+        } catch (airportError) {
+          console.warn(`Error fetching flights for airport ${airport}:`, airportError);
+          // Continue with other airports
         }
-      );
+      }
 
-      console.log(`Retrieved ${response.data.flights?.length || 0} flights from FlightAware`);
+      console.log(`Retrieved ${allFlights.length} flights from Kansas City ARTCC zone`);
 
-      if (!response.data.flights || response.data.flights.length === 0) {
-        console.warn('No flights returned from FlightAware API');
+      if (allFlights.length === 0) {
+        console.warn('No flights returned from FlightAware API for Kansas City ARTCC');
         return [];
       }
 
       // Transform FlightAware format to our schema
-      const aircraft = this.transformFlights(response.data.flights);
+      const aircraft = this.transformFlights(allFlights);
       
       return aircraft;
     } catch (error) {

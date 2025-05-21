@@ -23,14 +23,21 @@ export class BoundaryService {
 
   private loadBoundaryData() {
     try {
-      // Path to the boundary data CSV file
-      const filePath = path.join(process.cwd(), 'data', 'Ground_Level_ARTCC_Boundary_Data.csv');
+      // First try to use the latest file from attached_assets
+      let filePath = path.join(process.cwd(), 'attached_assets', 'Ground_Level_ARTCC_Boundary_Data_2025-05-15.csv');
+      
+      // Fall back to the data directory if not found
+      if (!fs.existsSync(filePath)) {
+        filePath = path.join(process.cwd(), 'data', 'Ground_Level_ARTCC_Boundary_Data.csv');
+      }
       
       // Check if file exists
       if (!fs.existsSync(filePath)) {
         console.warn(`Boundary data file not found at ${filePath}`);
         return;
       }
+      
+      console.log(`Loading boundary data from: ${filePath}`);
       
       // Read the file
       const fileContent = fs.readFileSync(filePath, 'utf-8');
