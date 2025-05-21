@@ -13,6 +13,7 @@ import { websocketService } from "./services/websocketService";
 import { flightawareService } from "./services/flightawareService";
 import { boundaryService } from "./services/boundaryService";
 import { kansasCityFlightService } from "./services/kansasCityFlightService";
+import { sampleDataService } from "./services/sampleDataService";
 
 // Create a validation middleware function
 function validateSchema(schema: z.ZodType<any, any>) {

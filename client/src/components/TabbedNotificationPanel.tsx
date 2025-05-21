@@ -9,7 +9,7 @@ interface TabbedNotificationPanelProps {
   notams: NOTAM[];
   isLoadingNotifications: boolean;
   isLoadingNOTAMs: boolean;
-  onResolveNotification: (id: number) => void;
+  onResolveNotification: (id: number) => Promise<Notification> | void;
   onSelectAircraftFromNotification: (aircraftId: number) => void;
   dataSources: DataSource[];
   selectedARTCC: string;

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import AircraftList from '@/components/AircraftList';
 import MapView from '@/components/MapView';
-import NotificationPanel from '@/components/NotificationPanel';
 import { useToast } from '@/hooks/use-toast';
 import AircraftDetailModal from '@/components/AircraftDetailModal';
 import { useAircraftData } from '@/hooks/useAircraftData';
@@ -13,7 +12,7 @@ import { Aircraft, DataSource } from '@/types/aircraft';
 import FilterDialog from '@/components/FilterDialog';
 import MapSettings from '@/components/MapSettings';
 import { useParams, useLocation } from 'wouter';
-import NOTAMPanel from '@/components/NOTAMPanel';
+import TabbedNotificationPanel from '@/components/TabbedNotificationPanel';
 
 const Dashboard = () => {
   const [showAircraftDetail, setShowAircraftDetail] = useState(false);
@@ -211,27 +210,21 @@ const Dashboard = () => {
                 </svg>
               )}
             </button>
-            <div className="space-y-4 p-2">
-              <NotificationPanel 
-                notifications={filteredNotifications}
-                isLoading={notificationsLoading}
-                onResolveNotification={resolveNotification}
-                onSelectAircraftFromNotification={(aircraftId) => {
-                  const aircraft = filteredAircraft.find(a => a.id === aircraftId);
-                  if (aircraft) {
-                    handleSelectAircraft(aircraft);
-                  }
-                }}
-                dataSources={dataSources}
-              />
-              
-              {/* NOTAM panel */}
-              <NOTAMPanel 
-                notams={notams}
-                isLoading={notamsLoading}
-                selectedARTCC={selectedARTCC}
-              />
-            </div>
+            <TabbedNotificationPanel
+              notifications={filteredNotifications}
+              notams={notams}
+              isLoadingNotifications={notificationsLoading}
+              isLoadingNOTAMs={notamsLoading}
+              onResolveNotification={resolveNotification}
+              onSelectAircraftFromNotification={(aircraftId) => {
+                const aircraft = filteredAircraft.find(a => a.id === aircraftId);
+                if (aircraft) {
+                  handleSelectAircraft(aircraft);
+                }
+              }}
+              dataSources={dataSources}
+              selectedARTCC={selectedARTCC}
+            />
           </div>
         </div>
       </main>
