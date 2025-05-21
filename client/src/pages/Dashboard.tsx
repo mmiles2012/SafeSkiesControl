@@ -70,6 +70,12 @@ const Dashboard = () => {
   const handleCloseAircraftDetail = () => {
     setShowAircraftDetail(false);
     navigate('/'); // Return to main dashboard
+    
+    // Force removal of all popups when the detail modal is closed
+    // This prevents any lingering popups from appearing afterward
+    setTimeout(() => {
+      document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
+    }, 50);
   };
 
   // Check for aircraft ID in URL and select that aircraft

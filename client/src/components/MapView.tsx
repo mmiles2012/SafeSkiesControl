@@ -247,15 +247,22 @@ const MapView: React.FC<MapViewProps> = ({
   
   // Focus on selected aircraft
   useEffect(() => {
-    if (!mapLoaded || !mapRef.current || !selectedAircraft) return;
+    if (!mapLoaded || !mapRef.current) return;
     
-    mapRef.current.flyTo({
-      center: [selectedAircraft.longitude, selectedAircraft.latitude],
-      zoom: 9,
-      speed: 1.5,
-      curve: 1.5,
-      essential: true
-    });
+    // Clean up all popups when aircraft is selected 
+    // to avoid showing both the popup and the modal
+    if (selectedAircraft) {
+      // Clear all popups immediately when selecting an aircraft
+      document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+      
+      mapRef.current.flyTo({
+        center: [selectedAircraft.longitude, selectedAircraft.latitude],
+        zoom: 9,
+        speed: 1.5,
+        curve: 1.5,
+        essential: true
+      });
+    }
   }, [selectedAircraft, mapLoaded]);
 
   return (
