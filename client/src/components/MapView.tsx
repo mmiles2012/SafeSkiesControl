@@ -196,28 +196,33 @@ const MapView: React.FC<MapViewProps> = ({
       
       // Handle hover events manually for better control
       el.addEventListener('mouseenter', () => {
-        // Remove any existing popups first
-        document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
-        
-        // Create and show popup only on hover
-        const hoverPopup = new mapboxgl.Popup({
-          closeButton: false,
-          closeOnClick: true,
-          className: 'aircraft-popup',
-          offset: 25
-        })
-        .setLngLat([a.longitude, a.latitude])
-        .setHTML(`
-          <div class="px-2 py-1 text-xs font-medium">
-            <div class="font-bold">${a.callsign}</div>
-            <div>${a.aircraftType}</div>
-            <div>${formatAltitude(a.altitude)}</div>
-          </div>
-        `)
-        .addTo(mapRef.current!);
-        
-        // Store reference to this popup
-        popupsRef.current.push(hoverPopup);
+        // Only show popup if no aircraft is selected to prevent dual display
+        if (!selectedAircraft) {
+          // Remove any existing popups first
+          document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
+          
+          // Create and show popup only on hover
+          const hoverPopup = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: true,
+            className: 'aircraft-popup',
+            offset: 25,
+            // Add max-width to prevent overflow
+            maxWidth: '220px'
+          })
+          .setLngLat([a.longitude, a.latitude])
+          .setHTML(`
+            <div class="px-2 py-1 text-xs font-medium">
+              <div class="font-bold">${a.callsign}</div>
+              <div>${a.aircraftType}</div>
+              <div>${formatAltitude(a.altitude)}</div>
+            </div>
+          `)
+          .addTo(mapRef.current!);
+          
+          // Store reference to this popup
+          popupsRef.current.push(hoverPopup);
+        }
       });
       
       // Remove popup when mouse leaves marker
