@@ -46,89 +46,94 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-surface border-gray-700 text-white max-w-3xl">
+      <DialogContent className="bg-background border-border max-w-3xl" aria-describedby="aircraft-details-description">
         <DialogHeader>
           <DialogTitle className="text-xl font-medium">
             Aircraft Details - {aircraft.callsign}
           </DialogTitle>
         </DialogHeader>
+        <p id="aircraft-details-description" className="sr-only">
+          Aircraft details including flight information, current status, and data verification
+        </p>
         
         <div className="p-4">
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <h3 className="font-medium mb-2 pb-1 border-b border-gray-700">Flight Information</h3>
+              <h3 className="font-medium mb-2 pb-1 border-b border-border">Flight Information</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Call Sign</span>
+                  <span className="text-muted-foreground">Call Sign</span>
                   <span className="font-mono">{aircraft.callsign}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Type</span>
+                  <span className="text-muted-foreground">Type</span>
                   <span>{aircraft.aircraftType}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Origin</span>
+                  <span className="text-muted-foreground">Origin</span>
                   <span>{aircraft.origin || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Destination</span>
+                  <span className="text-muted-foreground">Destination</span>
                   <span>{aircraft.destination || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Route</span>
+                  <span className="text-muted-foreground">Route</span>
                   <span className="font-mono text-xs">{aircraft.origin ? `${aircraft.origin} → ${aircraft.destination}` : 'N/A'}</span>
                 </div>
               </div>
             </div>
             
             <div>
-              <h3 className="font-medium mb-2 pb-1 border-b border-gray-700">Current Status</h3>
+              <h3 className="font-medium mb-2 pb-1 border-b border-border">Current Status</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Altitude</span>
+                  <span className="text-muted-foreground">Altitude</span>
                   <span className="font-mono">{formatAltitude(aircraft.altitude)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Speed</span>
+                  <span className="text-muted-foreground">Speed</span>
                   <span className="font-mono">{formatSpeed(aircraft.speed)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Heading</span>
+                  <span className="text-muted-foreground">Heading</span>
                   <span className="font-mono">{formatHeading(aircraft.heading)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Climb/Descent</span>
+                  <span className="text-muted-foreground">Climb/Descent</span>
                   <span className="font-mono">+0 ft/min</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Squawk</span>
+                  <span className="text-muted-foreground">Squawk</span>
                   <span className="font-mono">{aircraft.squawk || 'N/A'}</span>
                 </div>
               </div>
             </div>
             
             <div>
-              <h3 className="font-medium mb-2 pb-1 border-b border-gray-700">Data Verification</h3>
+              <h3 className="font-medium mb-2 pb-1 border-b border-border">Data Verification</h3>
               <div className="space-y-2">
                 {dataSources.map(source => (
                   <div key={source.id} className="flex justify-between">
-                    <span className="text-text-secondary">{source.name}</span>
+                    <span className="text-muted-foreground">{source.name}</span>
                     <span className="flex items-center">
-                      <span className={`status-indicator ${
-                        aircraft.verifiedSources.includes(source.name as any) ? 'bg-success' : 'bg-danger'
-                      } mr-1`}></span>
+                      <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                        aircraft.verifiedSources?.includes(source.name as any) 
+                          ? 'bg-green-500' 
+                          : 'bg-red-500'
+                      }`}></span>
                       <span>
-                        {aircraft.verifiedSources.includes(source.name as any) ? 'Verified' : 'Unverified'}
+                        {aircraft.verifiedSources?.includes(source.name as any) ? 'Verified' : 'Unverified'}
                       </span>
                     </span>
                   </div>
                 ))}
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Status</span>
+                  <span className="text-muted-foreground">Status</span>
                   <span className={
-                    aircraft.verificationStatus === 'verified' ? 'text-success font-medium' :
-                    aircraft.verificationStatus === 'partially_verified' ? 'text-warning font-medium' :
-                    'text-danger font-medium'
+                    aircraft.verificationStatus === 'verified' ? 'text-green-500 font-medium' :
+                    aircraft.verificationStatus === 'partially_verified' ? 'text-amber-500 font-medium' :
+                    'text-red-500 font-medium'
                   }>
                     {aircraft.verificationStatus === 'verified' ? 'Verified' :
                      aircraft.verificationStatus === 'partially_verified' ? 'Partially Verified' :
@@ -140,11 +145,11 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
           </div>
           
           <div className="mt-6">
-            <h3 className="font-medium mb-2 pb-1 border-b border-gray-700">Communication History</h3>
-            <div className="h-40 overflow-y-auto custom-scrollbar bg-surface-light p-2 rounded text-sm">
+            <h3 className="font-medium mb-2 pb-1 border-b border-border">Communication History</h3>
+            <div className="h-40 overflow-y-auto bg-secondary/10 p-3 rounded-md text-sm">
               {communicationHistory.map((comm, index) => (
                 <div key={index} className="mb-2">
-                  <span className="text-text-secondary mr-2 text-xs">{comm.timestamp}</span>
+                  <span className="text-muted-foreground mr-2 text-xs">{comm.timestamp}</span>
                   <span className={`${comm.from === 'ATC' ? 'text-primary' : 'text-secondary'} font-medium mr-1`}>
                     {comm.from}:
                   </span>
@@ -158,24 +163,33 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
             <div>
               <button 
                 onClick={() => {}} 
-                className="px-4 py-2 bg-primary rounded font-medium"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium flex items-center hover:bg-primary/90 transition-colors"
               >
-                <i className="material-icons align-bottom mr-1">message</i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
                 Communicate
               </button>
               <button 
-                className="px-4 py-2 bg-surface-light rounded font-medium ml-2"
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md font-medium ml-2 flex items-center hover:bg-secondary/90 transition-colors"
               >
-                <i className="material-icons align-bottom mr-1">timeline</i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="M3 3v18h18"></path>
+                  <path d="m19 9-5 5-4-4-3 3"></path>
+                </svg>
                 Flight History
               </button>
             </div>
             <div>
               <button 
                 onClick={() => onHandoff()}
-                className="px-4 py-2 bg-warning text-black rounded font-medium"
+                className="px-4 py-2 bg-warning text-warning-foreground rounded-md font-medium flex items-center hover:bg-warning/90 transition-colors"
               >
-                <i className="material-icons align-bottom mr-1">priority_high</i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
                 Hand off Aircraft
               </button>
             </div>
