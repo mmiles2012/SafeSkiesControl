@@ -268,19 +268,21 @@ const BoundaryLayer: React.FC<BoundaryLayerProps> = ({
 
   // Effect to update the boundary when parameters change
   useEffect(() => {
-    if (!map) return;
+    if (!map || !map.loaded()) return;
 
     const initBoundary = () => {
-      if (map.loaded()) {
+      try {
         createARTCCPolygon();
-      } else {
-        // If map isn't loaded yet, wait for it
-        map.once('load', createARTCCPolygon);
+      } catch (error) {
+        console.error('Error initializing boundary:', error);
+        setError('Failed to initialize boundary layer');
       }
     };
 
-    // Ensure we have a valid map instance
-    if (map.loaded && typeof map.loaded === 'function') {
+    map.once('load', initBoundary);
+    
+    // Also try to initialize immediately if map is already loaded
+    if (map.loaded()) {
       initBoundary();
     }
 

@@ -34,9 +34,15 @@ class WebSocketClient {
 
     this.isConnecting = true;
 
-    // Setup WebSocket connection with proper protocol detection
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    try {
+      // Setup WebSocket connection with proper protocol detection
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      
+      // Add error handling for URL construction
+      if (!window.location.host) {
+        throw new Error('Invalid host for WebSocket connection');
+      }
     
     console.log('Connecting to WebSocket at:', wsUrl);
     

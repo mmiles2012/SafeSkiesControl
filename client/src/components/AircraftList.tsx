@@ -48,7 +48,7 @@ const AircraftList: React.FC<AircraftListProps> = ({
           <span>Filter</span>
         </button>
       </div>
-      
+
       <div className="p-3 border-b border-border">
         <div className="relative">
           <input
@@ -64,7 +64,7 @@ const AircraftList: React.FC<AircraftListProps> = ({
           </svg>
         </div>
       </div>
-      
+
       <div className="flex flex-wrap gap-1 p-3 border-b border-border bg-muted text-sm">
         <button 
           className={`px-2 py-1 rounded-md transition-colors ${filters.verificationStatus === 'all' ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-accent'}`}
@@ -91,7 +91,7 @@ const AircraftList: React.FC<AircraftListProps> = ({
           Alerts
         </button>
       </div>
-      
+
       <div className="scrollable-content">
         {isLoading ? (
           <div className="p-4 text-center text-muted-foreground">
@@ -153,10 +153,10 @@ const AircraftList: React.FC<AircraftListProps> = ({
                         {aircraft.flightPlan || 'N/A'}
                       </span>
                     </div>
-                    {aircraft?.destination && (
+                    {aircraft && aircraft.destination && (
                       <div className="col-span-2 px-2 py-1 rounded-md bg-muted/50 flex justify-between">
                         <span className="text-muted-foreground">DEST</span>
-                        <span className="font-mono">{aircraft.destination}</span>
+                        <span className="font-mono">{aircraft.destination?.toString() || ''}</span>
                       </div>
                     )}
                   </div>
