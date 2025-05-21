@@ -30,7 +30,17 @@ export class WebSocketService {
       
       ws.on('message', (message) => {
         try {
-          const parsedMessage = JSON.parse(message.toString()) as WSMessage;
+          // Check if the message is a plain string like "ping"
+          const messageStr = message.toString();
+          
+          if (messageStr === "ping") {
+            console.log('Received message from client:', messageStr);
+            this.sendToClient(ws, { type: 'pong', data: { timestamp: Date.now() } });
+            return;
+          }
+          
+          // Otherwise try to parse as JSON
+          const parsedMessage = JSON.parse(messageStr) as WSMessage;
           this.handleClientMessage(ws, parsedMessage);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);

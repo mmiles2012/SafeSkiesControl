@@ -100,13 +100,18 @@ const Dashboard = () => {
   // Handle data mode toggle (sample/live)
   const handleDataModeToggle = async (newMode: 'sample' | 'live') => {
     try {
-      await toggleDataMode(newMode, selectedARTCC);
+      const success = await toggleDataMode(newMode, selectedARTCC);
       
-      toast({
-        title: `Switched to ${newMode} data mode`,
-        description: newMode === 'sample' ? 'Using generated aircraft data' : 'Using live FlightAware data',
-        duration: 3000
-      });
+      if (success) {
+        toast({
+          title: `Switched to ${newMode} data mode`,
+          description: newMode === 'sample' ? 'Using generated aircraft data' : 'Using live FlightAware data',
+          duration: 3000
+        });
+        return true;
+      } else {
+        throw new Error('Data mode toggle failed');
+      }
     } catch (error) {
       toast({
         title: `Failed to switch to ${newMode} data`,
@@ -114,6 +119,7 @@ const Dashboard = () => {
         variant: 'destructive',
         duration: 5000
       });
+      return false;
     }
   };
   
@@ -158,6 +164,21 @@ const Dashboard = () => {
     }
   }, [aircraftLoading, aircraft.length, generateARTCCSampleData, selectedARTCC]);
 
+  useEffect(() => {
+    // Load ARTCC-specific sample data when the component mounts
+    const loadInitialData = async () => {
+      if (dataMode === 'sample') {
+        try {
+          await generateARTCCSampleData(selectedARTCC);
+        } catch (error) {
+          console.error('Error loading initial sample data:', error);
+        }
+      }
+    };
+    
+    loadInitialData();
+  }, [selectedARTCC, dataMode, generateARTCCSampleData]);
+  
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <Header 

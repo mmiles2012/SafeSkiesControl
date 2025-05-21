@@ -25,6 +25,8 @@ interface HeaderProps {
   dataSources: DataSource[];
   onOpenSettings: () => void;
   onOpenFilters: () => void;
+  dataMode?: 'sample' | 'live';
+  onToggleDataMode?: (newMode: 'sample' | 'live') => Promise<boolean> | void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -33,7 +35,9 @@ const Header: React.FC<HeaderProps> = ({
   systemStatus,
   dataSources,
   onOpenSettings,
-  onOpenFilters
+  onOpenFilters,
+  dataMode = 'sample',
+  onToggleDataMode
 }) => {
   const [showLiveDataDialog, setShowLiveDataDialog] = useState(false);
   const [isFetchingLiveData, setIsFetchingLiveData] = useState(false);
@@ -133,19 +137,36 @@ const Header: React.FC<HeaderProps> = ({
   };
   
   // Function to toggle between sample and live data
-  const toggleDataSource = () => {
-    setIsUsingSampleData(!isUsingSampleData);
-    
-    if (!isUsingSampleData) {
-      // Switching to sample data
-      generateSampleData();
-      toast({
-        title: "Using Sample Data",
-        description: "Switched to sample aircraft data.",
-      });
+  const toggleDataSource = async () => {
+    // If external toggle handler is provided, use it
+    if (onToggleDataMode) {
+      const newMode = dataMode === 'sample' ? 'live' : 'sample';
+      try {
+        await onToggleDataMode(newMode);
+        // State will be managed by the parent component
+      } catch (error) {
+        console.error('Error toggling data mode:', error);
+        toast({
+          title: `Failed to switch to ${newMode} data`,
+          description: 'An error occurred while changing data sources',
+          variant: 'destructive',
+        });
+      }
     } else {
-      // Switching to live data - show the live data dialog
-      setShowLiveDataDialog(true);
+      // If no external handler, use internal state
+      setIsUsingSampleData(!isUsingSampleData);
+      
+      if (!isUsingSampleData) {
+        // Switching to sample data
+        generateSampleData();
+        toast({
+          title: "Using Sample Data",
+          description: "Switched to sample aircraft data.",
+        });
+      } else {
+        // Switching to live data - show the live data dialog
+        setShowLiveDataDialog(true);
+      }
     }
   };
   
