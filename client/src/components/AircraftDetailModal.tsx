@@ -159,8 +159,8 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
             </div>
           </div>
           
-          <div className="mt-6 flex justify-between">
-            <div>
+          <div className="mt-6 flex flex-wrap gap-3 justify-between">
+            <div className="flex gap-2">
               <button 
                 onClick={() => {}} 
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium flex items-center hover:bg-primary/90 transition-colors"
@@ -171,7 +171,7 @@ const AircraftDetailModal: React.FC<AircraftDetailModalProps> = ({
                 Communicate
               </button>
               <button 
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md font-medium ml-2 flex items-center hover:bg-secondary/90 transition-colors"
+                className="px-4 py-2 bg-accent text-accent-foreground border border-border rounded-md font-medium flex items-center hover:bg-accent/90 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                   <path d="M3 3v18h18"></path>
