@@ -194,12 +194,14 @@ const Dashboard = () => {
       
       <main className="flex flex-1 overflow-hidden">
         {/* Left panel - Aircraft list with minimize */}
-        <div className={`w-80 flex-shrink-0 border-r border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
-          leftPanelMinimized ? '-ml-80' : ''
-        }`}>
-          <div className="relative">
+        <div className={`flex-shrink-0 border-r border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
+          leftPanelMinimized ? 'w-0' : 'w-80'
+        } relative`}>
+          <div className="relative h-full">
             <button 
-              className="absolute -right-10 top-2 p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-r shadow-md flex items-center justify-center"
+              className={`absolute top-2 z-10 p-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md flex items-center justify-center ${
+                leftPanelMinimized ? '-right-10 rounded-r' : 'right-2 rounded'
+              }`}
               onClick={() => {
                 setLeftPanelMinimized(!leftPanelMinimized);
                 toast({
@@ -218,14 +220,16 @@ const Dashboard = () => {
                 </svg>
               )}
             </button>
-            <AircraftList 
-              aircraft={Array.isArray(filteredAircraft) ? filteredAircraft : []}
-              isLoading={aircraftLoading}
-              selectedAircraftId={selectedAircraft?.id}
-              onSelectAircraft={handleSelectAircraft}
-              filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
-              onUpdateFilters={updateFilters}
-            />
+            {!leftPanelMinimized && (
+              <AircraftList 
+                aircraft={Array.isArray(filteredAircraft) ? filteredAircraft : []}
+                isLoading={aircraftLoading}
+                selectedAircraftId={selectedAircraft?.id}
+                onSelectAircraft={handleSelectAircraft}
+                filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
+                onUpdateFilters={updateFilters}
+              />
+            )}
           </div>
         </div>
         
@@ -241,12 +245,14 @@ const Dashboard = () => {
         </div>
         
         {/* Right panel - Notifications with minimize */}
-        <div className={`w-80 flex-shrink-0 border-l border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
-          rightPanelMinimized ? 'mr-80' : ''
-        }`}>
-          <div className="relative">
+        <div className={`flex-shrink-0 border-l border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
+          rightPanelMinimized ? 'w-0' : 'w-80'
+        } relative`}>
+          <div className="relative h-full">
             <button 
-              className="absolute -left-10 top-2 p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-l shadow-md flex items-center justify-center"
+              className={`absolute top-2 z-10 p-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md flex items-center justify-center ${
+                rightPanelMinimized ? '-left-10 rounded-l' : 'left-2 rounded'
+              }`}
               onClick={() => {
                 setRightPanelMinimized(!rightPanelMinimized);
                 toast({
@@ -265,24 +271,26 @@ const Dashboard = () => {
                 </svg>
               )}
             </button>
-            <TabbedNotificationPanel
-              notifications={filteredNotifications}
-              notams={notams}
-              isLoadingNotifications={notificationsLoading}
-              isLoadingNOTAMs={notamsLoading}
-              onResolveNotification={resolveNotification}
-              onSelectAircraftFromNotification={(aircraftId) => {
-                // Import at the top was already done, just fully typing the parameter
-                const aircraft = Array.isArray(filteredAircraft) 
-                  ? filteredAircraft.find((a: { id: number }) => a.id === aircraftId)
-                  : null;
-                if (aircraft) {
-                  handleSelectAircraft(aircraft);
-                }
-              }}
-              dataSources={dataSources}
-              selectedARTCC={selectedARTCC}
-            />
+            {!rightPanelMinimized && (
+              <TabbedNotificationPanel
+                notifications={filteredNotifications}
+                notams={notams}
+                isLoadingNotifications={notificationsLoading}
+                isLoadingNOTAMs={notamsLoading}
+                onResolveNotification={resolveNotification}
+                onSelectAircraftFromNotification={(aircraftId) => {
+                  // Import at the top was already done, just fully typing the parameter
+                  const aircraft = Array.isArray(filteredAircraft) 
+                    ? filteredAircraft.find((a: { id: number }) => a.id === aircraftId)
+                    : null;
+                  if (aircraft) {
+                    handleSelectAircraft(aircraft);
+                  }
+                }}
+                dataSources={dataSources}
+                selectedARTCC={selectedARTCC}
+              />
+            )}
           </div>
         </div>
       </main>
