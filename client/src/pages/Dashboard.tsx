@@ -192,46 +192,46 @@ const Dashboard = () => {
         onToggleDataMode={handleDataModeToggle}
       />
       
-      <main className="flex flex-1 overflow-hidden">
+      <main className="flex flex-1 overflow-hidden relative">
         {/* Left panel - Aircraft list with minimize */}
-        <div className={`flex-shrink-0 border-r border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
-          leftPanelMinimized ? 'w-0' : 'w-80'
-        } relative`}>
-          <div className="relative h-full">
-            <button 
-              className={`absolute top-2 z-10 p-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md flex items-center justify-center ${
-                leftPanelMinimized ? '-right-10 rounded-r' : 'right-2 rounded'
-              }`}
-              onClick={() => {
-                setLeftPanelMinimized(!leftPanelMinimized);
-                toast({
-                  title: leftPanelMinimized ? "Aircraft panel expanded" : "Aircraft panel minimized",
-                  duration: 2000,
-                });
-              }}
-            >
-              {leftPanelMinimized ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              )}
-            </button>
-            {!leftPanelMinimized && (
-              <AircraftList 
-                aircraft={Array.isArray(filteredAircraft) ? filteredAircraft : []}
-                isLoading={aircraftLoading}
-                selectedAircraftId={selectedAircraft?.id}
-                onSelectAircraft={handleSelectAircraft}
-                filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
-                onUpdateFilters={updateFilters}
-              />
-            )}
+        <div className={`flex-shrink-0 border-r border-border bg-card transition-all duration-300 z-20 ${
+          leftPanelMinimized ? 'w-0 overflow-hidden' : 'w-80'
+        }`}>
+          <div className="w-80 h-full flex flex-col">
+            <AircraftList 
+              aircraft={Array.isArray(filteredAircraft) ? filteredAircraft : []}
+              isLoading={aircraftLoading}
+              selectedAircraftId={selectedAircraft?.id}
+              onSelectAircraft={handleSelectAircraft}
+              filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
+              onUpdateFilters={updateFilters}
+            />
           </div>
         </div>
+        
+        {/* Left panel toggle button */}
+        <button 
+          className={`absolute top-4 z-30 p-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg flex items-center justify-center transition-all duration-300 ${
+            leftPanelMinimized ? 'left-2 rounded' : 'left-80 rounded-r border-l-0'
+          }`}
+          onClick={() => {
+            setLeftPanelMinimized(!leftPanelMinimized);
+            toast({
+              title: leftPanelMinimized ? "Aircraft panel expanded" : "Aircraft panel minimized",
+              duration: 2000,
+            });
+          }}
+        >
+          {leftPanelMinimized ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          )}
+        </button>
         
         {/* Center panel - Map view with flexible width */}
         <div className="flex-1 flex-col-fixed overflow-container relative">
@@ -245,54 +245,54 @@ const Dashboard = () => {
         </div>
         
         {/* Right panel - Notifications with minimize */}
-        <div className={`flex-shrink-0 border-l border-border flex-col-fixed overflow-container bg-card transition-all duration-300 ${
-          rightPanelMinimized ? 'w-0' : 'w-80'
-        } relative`}>
-          <div className="relative h-full">
-            <button 
-              className={`absolute top-2 z-10 p-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md flex items-center justify-center ${
-                rightPanelMinimized ? '-left-10 rounded-l' : 'left-2 rounded'
-              }`}
-              onClick={() => {
-                setRightPanelMinimized(!rightPanelMinimized);
-                toast({
-                  title: rightPanelMinimized ? "Notifications panel expanded" : "Notifications panel minimized",
-                  duration: 2000,
-                });
+        <div className={`flex-shrink-0 border-l border-border bg-card transition-all duration-300 z-20 ${
+          rightPanelMinimized ? 'w-0 overflow-hidden' : 'w-80'
+        }`}>
+          <div className="w-80 h-full flex flex-col">
+            <TabbedNotificationPanel
+              notifications={filteredNotifications}
+              notams={notams}
+              isLoadingNotifications={notificationsLoading}
+              isLoadingNOTAMs={notamsLoading}
+              onResolveNotification={resolveNotification}
+              onSelectAircraftFromNotification={(aircraftId) => {
+                // Import at the top was already done, just fully typing the parameter
+                const aircraft = Array.isArray(filteredAircraft) 
+                  ? filteredAircraft.find((a: { id: number }) => a.id === aircraftId)
+                  : null;
+                if (aircraft) {
+                  handleSelectAircraft(aircraft);
+                }
               }}
-            >
-              {rightPanelMinimized ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              )}
-            </button>
-            {!rightPanelMinimized && (
-              <TabbedNotificationPanel
-                notifications={filteredNotifications}
-                notams={notams}
-                isLoadingNotifications={notificationsLoading}
-                isLoadingNOTAMs={notamsLoading}
-                onResolveNotification={resolveNotification}
-                onSelectAircraftFromNotification={(aircraftId) => {
-                  // Import at the top was already done, just fully typing the parameter
-                  const aircraft = Array.isArray(filteredAircraft) 
-                    ? filteredAircraft.find((a: { id: number }) => a.id === aircraftId)
-                    : null;
-                  if (aircraft) {
-                    handleSelectAircraft(aircraft);
-                  }
-                }}
-                dataSources={dataSources}
-                selectedARTCC={selectedARTCC}
-              />
-            )}
+              dataSources={dataSources}
+              selectedARTCC={selectedARTCC}
+            />
           </div>
         </div>
+        
+        {/* Right panel toggle button */}
+        <button 
+          className={`absolute top-4 z-30 p-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg flex items-center justify-center transition-all duration-300 ${
+            rightPanelMinimized ? 'right-2 rounded' : 'right-80 rounded-l border-r-0'
+          }`}
+          onClick={() => {
+            setRightPanelMinimized(!rightPanelMinimized);
+            toast({
+              title: rightPanelMinimized ? "Notifications panel expanded" : "Notifications panel minimized",
+              duration: 2000,
+            });
+          }}
+        >
+          {rightPanelMinimized ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          )}
+        </button>
       </main>
       
       {showAircraftDetail && selectedAircraft && (
