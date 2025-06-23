@@ -20,7 +20,7 @@ interface MapViewProps {
   onARTCCChange?: (artccId: string) => void;
 }
 
-const MapView = forwardRef<any, MapViewProps>((props, ref) => {
+const MapView = forwardRef((props: MapViewProps, ref: any) => {
   const {
     aircraft,
     selectedAircraft,
@@ -30,20 +30,19 @@ const MapView = forwardRef<any, MapViewProps>((props, ref) => {
   } = props;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<{ [key: number]: mapboxgl.Marker }>({});
-  const popupsRef = useRef<{ [key: number]: mapboxgl.Popup }>({});
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupsRef = useRef<mapboxgl.Popup[]>([]);
+  
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+  const [detailedView, setDetailedView] = useState(true);
+  const [selectedARTCC, setSelectedARTCC] = useState("ZKC");
 
   // Expose map instance to parent component
   useImperativeHandle(ref, () => ({
     getMap: () => mapRef.current
   }));
-
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
-  const [detailedView, setDetailedView] = useState(true);
-  // Sync the ARTCC selection with props
-  const [selectedARTCC, setSelectedARTCC] = useState("ZKC"); // Default to Kansas City ARTCC
 
   // Available ARTCC centers
   const artccOptions = [
@@ -167,9 +166,7 @@ const MapView = forwardRef<any, MapViewProps>((props, ref) => {
     };
   }, [aircraft]);
 
-  // Track markers for proper cleanup
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const popupsRef = useRef<mapboxgl.Popup[]>([]);
+  // Markers and popups are already declared above
 
   // Update markers when aircraft data changes
   useEffect(() => {
