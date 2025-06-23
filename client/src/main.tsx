@@ -59,6 +59,53 @@ style.textContent = `
     border-radius: 50%;
     display: inline-block;
   }
+  
+  /* Resizable panel improvements */
+  .resize-handle {
+    width: 4px !important;
+    background: #3D3D3D;
+    transition: background-color 0.2s;
+    position: relative;
+  }
+  
+  .resize-handle:hover {
+    background: #555;
+  }
+  
+  .resize-handle:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 20px;
+    background: #666;
+    border-radius: 1px;
+  }
+  
+  /* Map container responsive styles */
+  .map-container {
+    width: 100%;
+    height: 100%;
+    transition: all 0.3s ease;
+  }
+  
+  /* Ensure proper map sizing during panel resize */
+  .mapboxgl-map {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Panel transition smoothing */
+  [data-panel-group] {
+    transition: all 0.2s ease;
+  }
+  
+  /* Improve panel resize visual feedback */
+  [data-panel-resize-handle-enabled] {
+    cursor: col-resize;
+  }
 `;
 
 document.head.appendChild(style);
