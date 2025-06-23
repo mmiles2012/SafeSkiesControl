@@ -3,6 +3,7 @@ import { InsertAircraft } from '@shared/schema';
 import { storage } from '../storage';
 import { dataSourceService } from './dataSourceService';
 import { aircraftService } from './aircraftService';
+import { sampleDataService } from './sampleDataService';
 
 // FlightAware AeroAPI base URL and endpoints
 const AEROAPI_BASE_URL = 'https://aeroapi.flightaware.com/aeroapi';
@@ -90,8 +91,9 @@ export class FlightAwareService {
    */
   private async fetchLiveFlights(): Promise<InsertAircraft[]> {
     if (!this.isConfigured) {
-      console.warn('FlightAware API key not configured');
-      return [];
+      console.warn('FlightAware API key not configured, falling back to sample data');
+      // Fallback to sample data if available
+      return await sampleDataService.getSampleAircraft();
     }
 
     try {
@@ -103,32 +105,19 @@ export class FlightAwareService {
       }
 
       console.log('Fetching live flight data for Kansas City ARTCC from FlightAware...');
-      
-      // Collect all flights from major airports in Kansas City ARTCC (ZKC)
       let allFlights: FlightAwareAircraft[] = [];
-      
-      // Sleep function to respect rate limits
       const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-      
-      // Track rate limit to avoid hitting limits
       let remainingRequests = ZKC_AIRPORTS.length;
-      
-      // Implement staggered requests with delay to avoid rate limits
-      // Only request data for a subset of airports in each cycle
-      const priorityAirports = ZKC_AIRPORTS.slice(0, 3); // Only use top 3 airports to reduce API calls
-      
-      // Get flights for high-priority airports in the KC ARTCC region
+      const priorityAirports = ZKC_AIRPORTS.slice(0, 3);
+
       for (const airport of priorityAirports) {
         if (remainingRequests <= 0) {
           console.log('Rate limit safety threshold reached, pausing requests');
           break;
         }
-        
         try {
-          // Delay between requests to respect rate limits
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Query for flights departing from this airport
+          // Use 4 seconds between requests to respect rate limits
+          await sleep(4000);
           const departures = await axios.get<FlightAwareResponse>(
             `${AEROAPI_BASE_URL}/airports/${airport}/flights/departures`,
             {
@@ -140,19 +129,12 @@ export class FlightAwareService {
               }
             }
           );
-          
           remainingRequests--;
-          
           if (departures.data.flights && departures.data.flights.length > 0) {
             allFlights = [...allFlights, ...departures.data.flights];
           }
-          
-          // Only get arrivals if we haven't hit the limit
           if (remainingRequests > 0) {
-            // Delay between requests
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Query for flights arriving at this airport
+            await sleep(4000);
             const arrivals = await axios.get<FlightAwareResponse>(
               `${AEROAPI_BASE_URL}/airports/${airport}/flights/arrivals`,
               {
@@ -164,48 +146,37 @@ export class FlightAwareService {
                 }
               }
             );
-            
             remainingRequests--;
-            
             if (arrivals.data.flights && arrivals.data.flights.length > 0) {
               allFlights = [...allFlights, ...arrivals.data.flights];
             }
           }
-          
           console.log(`Retrieved flights for ${airport}`);
-          
         } catch (airportError: any) {
           if (airportError.response && airportError.response.status === 429) {
             console.warn('FlightAware API rate limit reached, stopping requests');
             break;
           }
-          console.warn(`Error fetching flights for airport ${airport}:`, airportError);
-          // Continue with other airports
+          // Improved error logging
+          console.warn(`Error fetching flights for airport ${airport}:`, airportError?.response?.data || airportError.message || airportError);
         }
       }
-
       console.log(`Retrieved ${allFlights.length} flights from Kansas City ARTCC zone`);
-
       if (allFlights.length === 0) {
-        console.warn('No flights returned from FlightAware API for Kansas City ARTCC');
-        return [];
+        console.warn('No flights returned from FlightAware API for Kansas City ARTCC, falling back to sample data');
+        return await sampleDataService.getSampleAircraft();
       }
-
-      // Transform FlightAware format to our schema
       const aircraft = this.transformFlights(allFlights);
-      
       return aircraft;
-    } catch (error) {
-      console.error('Error fetching flights from FlightAware:', error);
-      
-      // Update data source status to indicate error
+    } catch (error: any) {
+      console.error('Error fetching flights from FlightAware:', error?.response?.data || error.message || error);
       if (this.dataSourceId) {
         await storage.updateDataSource(this.dataSourceId, {
           status: 'error'
         });
       }
-      
-      return [];
+      // Fallback to sample data if available
+      return await sampleDataService.getSampleAircraft();
     }
   }
 
@@ -224,29 +195,50 @@ export class FlightAwareService {
 
   /**
    * Transform FlightAware API response into our aircraft schema
+   * Updated to handle both last_position and positions array, and to be robust to field name changes.
    */
   private transformFlights(flights: FlightAwareAircraft[]): InsertAircraft[] {
     return flights
-      .filter(flight => flight.last_position) // Only include flights with position data
       .map(flight => {
-        // Create an aircraft object from each flight
+        // Prefer last_position, but fallback to latest in positions array if available
+        let position = flight.last_position;
+        // Some FlightAware endpoints may return a 'positions' array instead
+        if (!position && (flight as any).positions && Array.isArray((flight as any).positions) && (flight as any).positions.length > 0) {
+          // Use the most recent position
+          position = (flight as any).positions[(flight as any).positions.length - 1];
+        }
+        if (!position) return null; // skip if no position data
+
+        // Handle possible variations in origin/destination field names
+        let originCode = null;
+        if (flight.origin && typeof flight.origin === 'object') {
+          originCode = flight.origin.code || flight.origin.code_iata || flight.origin.code_icao || null;
+        }
+        let destinationCode = null;
+        if (flight.destination && typeof flight.destination === 'object') {
+          destinationCode = flight.destination.code || flight.destination.code_iata || flight.destination.code_icao || null;
+        }
+
+        // Handle possible variations in aircraft type field
+        const aircraftType = flight.aircraft_type || (flight as any).aircraftType || 'Unknown';
+
         const aircraft: InsertAircraft = {
           callsign: flight.ident,
-          aircraftType: flight.aircraft_type || 'Unknown',
-          altitude: flight.last_position?.altitude || 0,
-          heading: flight.last_position?.heading || 0,
-          speed: flight.last_position?.groundspeed || 0,
-          latitude: flight.last_position?.latitude || 0,
-          longitude: flight.last_position?.longitude || 0,
-          origin: flight.origin?.code || null,
-          destination: flight.destination?.code || null,
+          aircraftType,
+          altitude: position.altitude || 0,
+          heading: position.heading || 0,
+          speed: position.groundspeed || 0,
+          latitude: position.latitude || 0,
+          longitude: position.longitude || 0,
+          origin: originCode,
+          destination: destinationCode,
           needsAssistance: false,
           verificationStatus: 'partially_verified', // FlightAware is one source
           controllerSectorId: null
         };
-
         return aircraft;
-      });
+      })
+      .filter(Boolean); // Only include flights with position data
   }
 
   /**
