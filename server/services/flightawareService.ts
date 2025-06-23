@@ -212,11 +212,11 @@ export class FlightAwareService {
         // Handle possible variations in origin/destination field names
         let originCode = null;
         if (flight.origin && typeof flight.origin === 'object') {
-          originCode = flight.origin.code || flight.origin.code_iata || flight.origin.code_icao || null;
+          originCode = flight.origin.code || null;
         }
         let destinationCode = null;
         if (flight.destination && typeof flight.destination === 'object') {
-          destinationCode = flight.destination.code || flight.destination.code_iata || flight.destination.code_icao || null;
+          destinationCode = flight.destination.code || null;
         }
 
         // Handle possible variations in aircraft type field
@@ -238,7 +238,7 @@ export class FlightAwareService {
         };
         return aircraft;
       })
-      .filter(Boolean); // Only include flights with position data
+      .filter((a): a is InsertAircraft => a !== null); // Only include flights with position data
   }
 
   /**

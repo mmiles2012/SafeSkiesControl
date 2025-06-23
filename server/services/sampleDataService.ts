@@ -121,7 +121,6 @@ export class SampleDataService {
       verificationStatus,
       verifiedSources: verificationSources,
       needsAssistance,
-      flightPlan,
     };
   }
 
@@ -153,6 +152,17 @@ export class SampleDataService {
       console.error('Error generating sample data:', error);
       throw error;
     }
+  }
+
+  /**
+   * Return an array of 10 random sample aircraft for the ZKC ARTCC region (for fallback use)
+   */
+  async getSampleAircraft(): Promise<InsertAircraft[]> {
+    const aircraft: InsertAircraft[] = [];
+    for (let i = 0; i < 10; i++) {
+      aircraft.push(this.generateRandomAircraftForARTCC('ZKC'));
+    }
+    return aircraft;
   }
 }
 
