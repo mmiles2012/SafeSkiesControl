@@ -20,13 +20,14 @@ interface MapViewProps {
   onARTCCChange?: (artccId: string) => void;
 }
 
-const MapView = forwardRef<any, MapViewProps>(({
-  aircraft,
-  selectedAircraft,
-  onSelectAircraft,
-  dataSources,
-  onARTCCChange
-}, ref) => {
+const MapView = forwardRef<any, MapViewProps>((props, ref) => {
+  const {
+    aircraft,
+    selectedAircraft,
+    onSelectAircraft,
+    dataSources,
+    onARTCCChange
+  } = props;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: number]: mapboxgl.Marker }>({});
