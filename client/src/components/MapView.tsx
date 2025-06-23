@@ -20,7 +20,7 @@ interface MapViewProps {
   onARTCCChange?: (artccId: string) => void;
 }
 
-const MapView: React.ForwardRefExoticComponent<React.PropsWithoutRef<MapViewProps> & React.RefAttributes<unknown>> = forwardRef<any, MapViewProps>(({
+const MapView = forwardRef<any, MapViewProps>(({
   aircraft,
   selectedAircraft,
   onSelectAircraft,
