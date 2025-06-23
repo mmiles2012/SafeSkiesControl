@@ -24,6 +24,20 @@ const Dashboard = () => {
   const [selectedARTCC, setSelectedARTCC] = useState("ZKC");
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+
+  // Handle map resize when panels collapse/expand
+  const handleMapResize = () => {
+    setTimeout(() => {
+      if (mapRef.current?.getMap) {
+        mapRef.current.getMap().resize();
+      }
+    }, 350); // Wait for panel transition to complete
+  };
+
+  // Trigger map resize when panels change
+  useEffect(() => {
+    handleMapResize();
+  }, [leftPanelCollapsed, rightPanelCollapsed]);
   const { toast } = useToast();
   const params = useParams<{ id: string }>();
   const [_, navigate] = useLocation();
