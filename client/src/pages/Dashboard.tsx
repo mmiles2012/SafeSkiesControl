@@ -14,13 +14,16 @@ import FilterDialog from '@/components/FilterDialog';
 import MapSettings from '@/components/MapSettings';
 import { useParams, useLocation } from 'wouter';
 import TabbedNotificationPanel from '@/components/TabbedNotificationPanel';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Dashboard = () => {
   const [showAircraftDetail, setShowAircraftDetail] = useState(false);
   const [showMapSettings, setShowMapSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedARTCC, setSelectedARTCC] = useState("ZKC");
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const { toast } = useToast();
   const params = useParams<{ id: string }>();
   const [_, navigate] = useLocation();
@@ -71,15 +74,7 @@ const Dashboard = () => {
     return 'offline';
   };
 
-  // Handle panel resize - trigger map resize
-  const handlePanelResize = () => {
-    // Small delay to ensure the panel resize animation completes
-    setTimeout(() => {
-      if (mapRef.current?.getMap) {
-        mapRef.current.getMap().resize();
-      }
-    }, 100);
-  };
+
 
   // Handle aircraft selection
   const handleSelectAircraft = (aircraft: Aircraft) => {
@@ -203,65 +198,79 @@ const Dashboard = () => {
         onToggleDataMode={handleDataModeToggle}
       />
       
-      <main className="flex flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelResize}>
-          {/* Left panel - Aircraft list */}
-          <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
-            <div className="h-full flex flex-col border-r border-border bg-card">
-              <AircraftList 
-                aircraft={Array.isArray(filteredAircraft) ? filteredAircraft : []}
-                isLoading={aircraftLoading}
-                selectedAircraftId={selectedAircraft?.id}
-                onSelectAircraft={handleSelectAircraft}
-                filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
-                onUpdateFilters={updateFilters}
-              />
-            </div>
-          </ResizablePanel>
-          
-          {/* Resize handle for left panel */}
-          <ResizableHandle className="resize-handle" />
-          
-          {/* Center panel - Map view */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="h-full map-container">
-              <MapView 
-                ref={mapRef}
-                aircraft={Array.isArray(aircraft) ? aircraft : []}
-                selectedAircraft={selectedAircraft}
-                onSelectAircraft={handleSelectAircraft}
-                dataSources={dataSources}
-                onARTCCChange={handleARTCCChange}
-              />
-            </div>
-          </ResizablePanel>
-          
-          {/* Resize handle for right panel */}
-          <ResizableHandle className="resize-handle" />
-          
-          {/* Right panel - Notifications */}
-          <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
-            <div className="h-full flex flex-col border-l border-border bg-card">
-              <TabbedNotificationPanel
-                notifications={filteredNotifications}
-                notams={notams}
-                isLoadingNotifications={notificationsLoading}
-                isLoadingNOTAMs={notamsLoading}
-                onResolveNotification={resolveNotification}
-                onSelectAircraftFromNotification={(aircraftId) => {
-                  const aircraft = Array.isArray(filteredAircraft) 
-                    ? filteredAircraft.find((a: { id: number }) => a.id === aircraftId)
-                    : null;
-                  if (aircraft) {
-                    handleSelectAircraft(aircraft);
-                  }
-                }}
-                dataSources={dataSources}
-                selectedARTCC={selectedARTCC}
-              />
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+      <main className="flex flex-1 overflow-hidden relative">
+        {/* Left panel - Aircraft list */}
+        <div className={`h-full flex flex-col border-r border-border bg-card transition-all duration-300 ease-in-out ${
+          leftPanelCollapsed ? 'w-0 overflow-hidden' : 'w-80'
+        }`}>
+          <div className="h-full">
+            <AircraftList 
+              aircraft={Array.isArray(filteredAircraft) ? filteredAircraft : []}
+              isLoading={aircraftLoading}
+              selectedAircraftId={selectedAircraft?.id}
+              onSelectAircraft={handleSelectAircraft}
+              filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
+              onUpdateFilters={updateFilters}
+            />
+          </div>
+        </div>
+        
+        {/* Left panel toggle button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 h-12 w-8 p-0 bg-background border-border shadow-md"
+          onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+        >
+          {leftPanelCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </Button>
+        
+        {/* Center panel - Map view */}
+        <div className="flex-1 h-full map-container">
+          <MapView 
+            ref={mapRef}
+            aircraft={Array.isArray(aircraft) ? aircraft : []}
+            selectedAircraft={selectedAircraft}
+            onSelectAircraft={handleSelectAircraft}
+            dataSources={dataSources}
+            onARTCCChange={handleARTCCChange}
+          />
+        </div>
+        
+        {/* Right panel toggle button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 h-12 w-8 p-0 bg-background border-border shadow-md"
+          onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+        >
+          {rightPanelCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+        </Button>
+        
+        {/* Right panel - Notifications */}
+        <div className={`h-full flex flex-col border-l border-border bg-card transition-all duration-300 ease-in-out ${
+          rightPanelCollapsed ? 'w-0 overflow-hidden' : 'w-80'
+        }`}>
+          <div className="h-full">
+            <TabbedNotificationPanel
+              notifications={filteredNotifications}
+              notams={notams}
+              isLoadingNotifications={notificationsLoading}
+              isLoadingNOTAMs={notamsLoading}
+              onResolveNotification={resolveNotification}
+              onSelectAircraftFromNotification={(aircraftId) => {
+                const aircraft = Array.isArray(filteredAircraft) 
+                  ? filteredAircraft.find((a: { id: number }) => a.id === aircraftId)
+                  : null;
+                if (aircraft) {
+                  handleSelectAircraft(aircraft);
+                }
+              }}
+              dataSources={dataSources}
+              selectedARTCC={selectedARTCC}
+            />
+          </div>
+        </div>
       </main>
       
       {showAircraftDetail && selectedAircraft && (
