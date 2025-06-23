@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Aircraft, DataSource, MapSettings, Restriction, Sector } from '@/types/aircraft';
 import { useQuery } from '@tanstack/react-query';
 import MapControls from './MapControls';
@@ -20,21 +20,30 @@ interface MapViewProps {
   onARTCCChange?: (artccId: string) => void;
 }
 
-const MapView: React.FC<MapViewProps> = ({
+const MapView: React.ForwardRefExoticComponent<React.PropsWithoutRef<MapViewProps> & React.RefAttributes<unknown>> = forwardRef<any, MapViewProps>(({
   aircraft,
   selectedAircraft,
   onSelectAircraft,
   dataSources,
   onARTCCChange
-}) => {
+}, ref) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<{ [key: number]: mapboxgl.Marker }>({});
+  const popupsRef = useRef<{ [key: number]: mapboxgl.Popup }>({});
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+
+  // Expose map instance to parent component
+  useImperativeHandle(ref, () => ({
+    getMap: () => mapRef.current
+  }));
+
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [detailedView, setDetailedView] = useState(true);
   // Sync the ARTCC selection with props
   const [selectedARTCC, setSelectedARTCC] = useState("ZKC"); // Default to Kansas City ARTCC
-  
+
   // Available ARTCC centers
   const artccOptions = [
     { id: "ZKC", name: "Kansas City" },
@@ -43,7 +52,7 @@ const MapView: React.FC<MapViewProps> = ({
     { id: "ZNY", name: "New York" },
     { id: "ZMA", name: "Miami" }
   ];
-  
+
   // No need for this effect - we'll handle ARTCC changes in the dropdown
   const [mapSettings, setMapSettings] = useState<MapSettings>({
     showGrid: true,
@@ -60,13 +69,13 @@ const MapView: React.FC<MapViewProps> = ({
     queryKey: ['/api/restrictions'],
     refetchInterval: 60000,
   });
-  
+
   // Fetch sectors
   const { data: sectors = [] } = useQuery<Sector[]>({
     queryKey: ['/api/sectors'],
     refetchInterval: 60000,
   });
-  
+
   // Get verification status counts
   const verificationCounts = {
     verified: aircraft.filter(a => a.verificationStatus === 'verified').length,
@@ -77,11 +86,11 @@ const MapView: React.FC<MapViewProps> = ({
   // Initialize map on component mount
   useEffect(() => {
     if (!mapContainerRef.current) return;
-    
+
     // Initialize map only once
     if (!mapRef.current) {
       console.log('Initializing map...');
-      
+
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: 'mapbox://styles/mapbox/navigation-day-v1',
@@ -89,19 +98,19 @@ const MapView: React.FC<MapViewProps> = ({
         zoom: 4,
         attributionControl: false
       });
-      
+
       map.on('load', () => {
         console.log('Map loaded successfully!');
         setMapLoaded(true);
         mapRef.current = map;
         setMapInstance(map);
       });
-      
+
       map.on('error', (e) => {
         console.error('Map error:', e);
       });
     }
-    
+
     // Cleanup function
     return () => {
       if (mapRef.current) {
@@ -110,7 +119,7 @@ const MapView: React.FC<MapViewProps> = ({
       }
     };
   }, []);
-  
+
   // Run periodic collision detection
   useEffect(() => {
     const checkCollisions = async () => {
@@ -122,18 +131,18 @@ const MapView: React.FC<MapViewProps> = ({
         console.error('Error detecting collisions:', error);
       }
     };
-    
+
     // Check for collisions every 10 seconds
     const collisionInterval = setInterval(checkCollisions, 10000);
-    
+
     // Initial check
     checkCollisions();
-    
+
     return () => {
       clearInterval(collisionInterval);
     };
   }, [aircraft]);
-  
+
   // Run periodic airspace violation detection
   useEffect(() => {
     const checkAirspaceViolations = async () => {
@@ -145,13 +154,13 @@ const MapView: React.FC<MapViewProps> = ({
         console.error('Error detecting airspace violations:', error);
       }
     };
-    
+
     // Check for airspace violations every 15 seconds
     const violationInterval = setInterval(checkAirspaceViolations, 15000);
-    
+
     // Initial check
     checkAirspaceViolations();
-    
+
     return () => {
       clearInterval(violationInterval);
     };
@@ -160,33 +169,33 @@ const MapView: React.FC<MapViewProps> = ({
   // Track markers for proper cleanup
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const popupsRef = useRef<mapboxgl.Popup[]>([]);
-  
+
   // Update markers when aircraft data changes
   useEffect(() => {
     if (!mapLoaded || !mapRef.current || aircraft.length === 0) return;
-    
+
     console.log('Updating aircraft markers');
-    
+
     // Remove existing markers and popups properly
     if (markersRef.current.length > 0) {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
     }
-    
+
     if (popupsRef.current.length > 0) {
       popupsRef.current.forEach(popup => popup.remove());
       popupsRef.current = [];
     }
-    
+
     // Clean up any remaining popups that might be stuck
     document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
-    
+
     // Add new markers
     aircraft.forEach(a => {
       const el = document.createElement('div');
       el.className = 'aircraft-marker';
       el.style.transform = `rotate(${a.heading}deg)`;
-      
+
       // Set color based on verification status
       if (a.verificationStatus === 'verified') {
         el.style.backgroundColor = 'hsl(var(--verified))';
@@ -195,12 +204,12 @@ const MapView: React.FC<MapViewProps> = ({
       } else {
         el.style.backgroundColor = 'hsl(var(--unverified))';
       }
-      
+
       // Add pulsing effect for aircraft needing assistance
       if (a.needsAssistance) {
         el.classList.add('pulse');
       }
-      
+
       // Add marker to map without popup, with validation to prevent Invalid LngLat errors
       try {
         // Validate coordinates before creating marker
@@ -209,7 +218,7 @@ const MapView: React.FC<MapViewProps> = ({
           const marker = new mapboxgl.Marker(el)
             .setLngLat([a.longitude, a.latitude])
             .addTo(mapRef.current!);
-            
+
           // Track the marker for cleanup 
           markersRef.current.push(marker);
         } else {
@@ -220,12 +229,12 @@ const MapView: React.FC<MapViewProps> = ({
         console.error(`Error adding marker for ${a.callsign}:`, error);
         return; // Skip rest of processing for this aircraft
       }
-      
+
       // Only attach the event listeners if we have valid coordinates
       try {
         if (typeof a.longitude === 'number' && !isNaN(a.longitude) && 
             typeof a.latitude === 'number' && !isNaN(a.latitude)) {
-            
+
           // Handle hover events manually for better control
           el.addEventListener('mouseenter', () => {
             // Only show popup if no aircraft is selected to prevent dual display
@@ -233,7 +242,7 @@ const MapView: React.FC<MapViewProps> = ({
               try {
                 // Remove any existing popups first
                 document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
-                
+
                 // Create and show popup only on hover
                 const hoverPopup = new mapboxgl.Popup({
                   closeButton: false,
@@ -252,7 +261,7 @@ const MapView: React.FC<MapViewProps> = ({
                   </div>
                 `)
                 .addTo(mapRef.current!);
-                
+
                 // Store reference to this popup
                 popupsRef.current.push(hoverPopup);
               } catch (error) {
@@ -264,12 +273,12 @@ const MapView: React.FC<MapViewProps> = ({
       } catch (error) {
         console.error('Error setting up hover events for aircraft:', error);
       }
-      
+
       // Only add these event listeners if we're working with valid coordinates
       try {
         if (typeof a.longitude === 'number' && !isNaN(a.longitude) && 
             typeof a.latitude === 'number' && !isNaN(a.latitude)) {
-            
+
           // Remove popup when mouse leaves marker
           el.addEventListener('mouseleave', () => {
             // Delay the removal slightly to allow clicking
@@ -289,9 +298,9 @@ const MapView: React.FC<MapViewProps> = ({
               }
             }, 100);
           });
-          
+
           // Marker is already added to tracking array above
-          
+
           // Add click handler to select aircraft
           el.addEventListener('click', () => {
             onSelectAircraft(a);
@@ -302,17 +311,17 @@ const MapView: React.FC<MapViewProps> = ({
       }
     });
   }, [aircraft, mapLoaded, onSelectAircraft]);
-  
+
   // Focus on selected aircraft
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) return;
-    
+
     // Clean up all popups when aircraft is selected 
     // to avoid showing both the popup and the modal
     if (selectedAircraft) {
       // Clear all popups immediately when selecting an aircraft
       document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove());
-      
+
       mapRef.current.flyTo({
         center: [selectedAircraft.longitude, selectedAircraft.latitude],
         zoom: 9,
@@ -331,7 +340,7 @@ const MapView: React.FC<MapViewProps> = ({
           className="absolute inset-0 bg-muted/50 rounded-lg overflow-hidden"
           style={{ width: '100%', height: '100%' }}
         ></div>
-        
+
         {mapLoaded && mapInstance && (
           <BoundaryLayer 
             facilityId={selectedARTCC} 
@@ -339,7 +348,7 @@ const MapView: React.FC<MapViewProps> = ({
             visible={true}
           />
         )}
-        
+
         <MapControls 
           onZoomIn={() => mapRef.current?.zoomIn()}
           onZoomOut={() => mapRef.current?.zoomOut()}
@@ -354,7 +363,7 @@ const MapView: React.FC<MapViewProps> = ({
           settings={mapSettings}
           onUpdateSettings={(settings) => setMapSettings(prevSettings => ({...prevSettings, ...settings}))}
         />
-        
+
         <div className="absolute left-4 top-4 flex items-center space-x-2 z-10">
           <div className="bg-background/90 dark:bg-card/90 p-1.5 rounded-lg shadow-md border border-border">
             <div className="flex flex-col space-y-2">
@@ -401,14 +410,14 @@ const MapView: React.FC<MapViewProps> = ({
               </svg>
               <span className="font-medium">Sector: {selectedARTCC}</span>
             </div>
-            
+
             <div className="flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
               </svg>
               <span>Aircraft: <span className="font-medium">{aircraft.length}</span></span>
             </div>
-            
+
             <div className={`flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
               dataSources.every(ds => ds.status === 'online')
                 ? 'bg-[hsl(var(--verified))/15] text-[hsl(var(--verified))]'
@@ -433,12 +442,15 @@ const MapView: React.FC<MapViewProps> = ({
             </div>
           </div>
         </div>
-        
+
         {/* Commented out the aircraft info popup that appears at the bottom of the map
           This popup was causing issues by remaining visible after closing the main detail modal */}
       </section>
     </MapContext.Provider>
   );
-};
+});
+
+// Adding a display name for debugging purposes
+MapView.displayName = 'MapView';
 
 export default MapView;
