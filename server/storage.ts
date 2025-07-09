@@ -22,6 +22,7 @@ export interface IStorage {
   createAircraft(aircraft: InsertAircraft): Promise<Aircraft>;
   updateAircraft(id: number, aircraft: Partial<InsertAircraft>): Promise<Aircraft | undefined>;
   deleteAircraft(id: number): Promise<boolean>;
+  getFilteredAircraft(filters: AircraftFilterOptions): Promise<Aircraft[]>;
   
   // Sector methods
   getAllSectors(): Promise<Sector[]>;
@@ -54,6 +55,19 @@ export interface IStorage {
   getDataSourceByName(name: string): Promise<DataSource | undefined>;
   createDataSource(dataSource: InsertDataSource): Promise<DataSource>;
   updateDataSource(id: number, dataSource: Partial<InsertDataSource>): Promise<DataSource | undefined>;
+}
+
+// Add filter/sort options type
+export interface AircraftFilterOptions {
+  verificationStatus?: string;
+  needsAssistance?: boolean;
+  searchTerm?: string;
+  type?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  lat?: number;
+  lon?: number;
+  atcZoneId?: string;
 }
 
 // In-memory storage implementation
@@ -172,6 +186,54 @@ export class MemStorage implements IStorage {
   
   async deleteAircraft(id: number): Promise<boolean> {
     return this.aircraft.delete(id);
+  }
+  
+  async getFilteredAircraft(filters: AircraftFilterOptions): Promise<Aircraft[]> {
+    let aircraftList = Array.from(this.aircraft.values());
+    // Filtering
+    if (filters.verificationStatus && filters.verificationStatus !== "all") {
+      aircraftList = aircraftList.filter(ac => ac.verificationStatus === filters.verificationStatus);
+    }
+    if (filters.needsAssistance !== undefined) {
+      aircraftList = aircraftList.filter(ac => ac.needsAssistance === filters.needsAssistance);
+    }
+    if (filters.searchTerm) {
+      const searchLower = filters.searchTerm.toLowerCase();
+      aircraftList = aircraftList.filter(ac => {
+        const callsignMatch = ac.callsign.toLowerCase().includes(searchLower);
+        const typeMatch = ac.aircraftType.toLowerCase().includes(searchLower);
+        const originMatch = ac.origin?.toLowerCase().includes(searchLower) || false;
+        const destMatch = ac.destination?.toLowerCase().includes(searchLower) || false;
+        return callsignMatch || typeMatch || originMatch || destMatch;
+      });
+    }
+    if (filters.type) {
+      aircraftList = aircraftList.filter(ac => ac.aircraftType === filters.type);
+    }
+    // Sorting (proximity/zone left to service for now)
+    if (filters.sortBy && !['proximity'].includes(filters.sortBy)) {
+      const order = filters.sortOrder === 'desc' ? -1 : 1;
+      switch (filters.sortBy) {
+        case 'altitude':
+          aircraftList.sort((a, b) => order * ((a.altitude || 0) - (b.altitude || 0)));
+          break;
+        case 'destination':
+          aircraftList.sort((a, b) => order * ((a.destination || '').localeCompare(b.destination || '')));
+          break;
+        case 'origin':
+          aircraftList.sort((a, b) => order * ((a.origin || '').localeCompare(b.origin || '')));
+          break;
+        case 'latitude':
+          aircraftList.sort((a, b) => order * ((a.latitude || 0) - (b.latitude || 0)));
+          break;
+        case 'longitude':
+          aircraftList.sort((a, b) => order * ((a.longitude || 0) - (b.longitude || 0)));
+          break;
+        default:
+          break;
+      }
+    }
+    return aircraftList;
   }
   
   // Sector methods

@@ -136,77 +136,31 @@ export class AircraftService {
     lon?: number;
     atcZoneId?: string;
   }): Promise<Aircraft[]> {
-    let aircraftList = await storage.getAllAircraft();
-    // Verification status filter
-    if (filters.verificationStatus && filters.verificationStatus !== "all") {
-      aircraftList = aircraftList.filter(ac => ac.verificationStatus === filters.verificationStatus);
-    }
-    // Needs assistance filter
-    if (filters.needsAssistance !== undefined) {
-      aircraftList = aircraftList.filter(ac => ac.needsAssistance === filters.needsAssistance);
-    }
-    // Search term filter
-    if (filters.searchTerm) {
-      const searchLower = filters.searchTerm.toLowerCase();
-      aircraftList = aircraftList.filter(ac => {
-        const callsignMatch = ac.callsign.toLowerCase().includes(searchLower);
-        const typeMatch = ac.aircraftType.toLowerCase().includes(searchLower);
-        const originMatch = ac.origin?.toLowerCase().includes(searchLower) || false;
-        const destMatch = ac.destination?.toLowerCase().includes(searchLower) || false;
-        return callsignMatch || typeMatch || originMatch || destMatch;
-      });
-    }
-    // Aircraft type filter
-    if (filters.type) {
-      aircraftList = aircraftList.filter(ac => ac.aircraftType === filters.type);
-    }
-    // Sorting
-    if (filters.sortBy) {
+    // Delegate filtering/sorting to storage, except proximity/zone
+    let aircraftList = await storage.getFilteredAircraft(filters);
+    // Proximity/zone sorting (must be done in service)
+    if (filters.sortBy === 'proximity') {
       const order = filters.sortOrder === 'desc' ? -1 : 1;
-      switch (filters.sortBy) {
-        case 'altitude':
-          aircraftList.sort((a, b) => order * ((a.altitude || 0) - (b.altitude || 0)));
-          break;
-        case 'destination':
-          aircraftList.sort((a, b) => order * ((a.destination || '').localeCompare(b.destination || '')));
-          break;
-        case 'origin':
-          aircraftList.sort((a, b) => order * ((a.origin || '').localeCompare(b.origin || '')));
-          break;
-        case 'latitude': // N-S
-          aircraftList.sort((a, b) => order * ((a.latitude || 0) - (b.latitude || 0)));
-          break;
-        case 'longitude': // E-W
-          aircraftList.sort((a, b) => order * ((a.longitude || 0) - (b.longitude || 0)));
-          break;
-        case 'proximity':
-          // Proximity to ATC zone center
-          if (filters.atcZoneId) {
-            const boundaries = boundaryService.getBoundaryData(filters.atcZoneId);
-            if (boundaries.length > 0) {
-              // Use the first boundary's average center as the reference point
-              const allPoints = boundaries.flatMap(b => b.boundaries);
-              const avgLat = allPoints.reduce((sum, p) => sum + p.latitude, 0) / allPoints.length;
-              const avgLon = allPoints.reduce((sum, p) => sum + p.longitude, 0) / allPoints.length;
-              const dist = (ac: Aircraft) => {
-                const dLat = (ac.latitude || 0) - avgLat;
-                const dLon = (ac.longitude || 0) - avgLon;
-                return Math.sqrt(dLat * dLat + dLon * dLon);
-              };
-              aircraftList.sort((a, b) => order * (dist(a) - dist(b)));
-            }
-          } else if (typeof filters.lat === 'number' && typeof filters.lon === 'number') {
-            // Fallback to lat/lon if no ATC zone specified
-            const dist = (ac: Aircraft) => {
-              const dLat = (ac.latitude || 0) - filters.lat!;
-              const dLon = (ac.longitude || 0) - filters.lon!;
-              return Math.sqrt(dLat * dLat + dLon * dLon);
-            };
-            aircraftList.sort((a, b) => order * (dist(a) - dist(b)));
-          }
-          break;
-        default:
-          break;
+      if (filters.atcZoneId) {
+        const boundaries = boundaryService.getBoundaryData(filters.atcZoneId);
+        if (boundaries.length > 0) {
+          const allPoints = boundaries.flatMap(b => b.boundaries);
+          const avgLat = allPoints.reduce((sum, p) => sum + p.latitude, 0) / allPoints.length;
+          const avgLon = allPoints.reduce((sum, p) => sum + p.longitude, 0) / allPoints.length;
+          const dist = (ac: Aircraft) => {
+            const dLat = (ac.latitude || 0) - avgLat;
+            const dLon = (ac.longitude || 0) - avgLon;
+            return Math.sqrt(dLat * dLat + dLon * dLon);
+          };
+          aircraftList.sort((a, b) => order * (dist(a) - dist(b)));
+        }
+      } else if (typeof filters.lat === 'number' && typeof filters.lon === 'number') {
+        const dist = (ac: Aircraft) => {
+          const dLat = (ac.latitude || 0) - filters.lat!;
+          const dLon = (ac.longitude || 0) - filters.lon!;
+          return Math.sqrt(dLat * dLat + dLon * dLon);
+        };
+        aircraftList.sort((a, b) => order * (dist(a) - dist(b)));
       }
     }
     return aircraftList;
