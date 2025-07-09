@@ -46,16 +46,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aircraft endpoints
   // ------------------------
   
-  // Get all aircraft (with optional filtering)
+  // Get all aircraft (with optional filtering and sorting)
   router.get("/aircraft", async (req, res) => {
     try {
-      // Extract query parameters for filtering
-      const { verificationStatus, needsAssistance, searchTerm, type } = req.query;
+      // Extract query parameters for filtering and sorting
+      const { verificationStatus, needsAssistance, searchTerm, type, sortBy, sortOrder, lat, lon, atcZoneId } = req.query;
       const filters = {
         verificationStatus: verificationStatus as string | undefined,
         needsAssistance: needsAssistance !== undefined ? needsAssistance === 'true' : undefined,
         searchTerm: searchTerm as string | undefined,
-        type: type as string | undefined
+        type: type as string | undefined,
+        sortBy: sortBy as string | undefined,
+        sortOrder: sortOrder as 'asc' | 'desc' | undefined,
+        lat: lat !== undefined ? parseFloat(lat as string) : undefined,
+        lon: lon !== undefined ? parseFloat(lon as string) : undefined,
+        atcZoneId: atcZoneId as string | undefined
       };
       const aircraft = await aircraftService.getFilteredAircraft(filters);
       res.json(aircraft);

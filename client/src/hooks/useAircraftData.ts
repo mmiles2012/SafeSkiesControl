@@ -15,7 +15,11 @@ export function useAircraftData() {
     verificationStatus: "all",
     needsAssistance: undefined,
     searchTerm: "",
-    type: undefined
+    type: undefined,
+    sortBy: undefined,
+    sortOrder: 'asc',
+    lat: undefined,
+    lon: undefined
   });
 
   // Fetch aircraft with filters from backend
@@ -26,8 +30,12 @@ export function useAircraftData() {
         verificationStatus: filters.verificationStatus,
         needsAssistance: filters.needsAssistance,
         searchTerm: filters.searchTerm,
-        type: filters.type
-      }, { skipNulls: true }); // removed skipEmptyString, not supported by qs
+        type: filters.type,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        lat: filters.lat,
+        lon: filters.lon
+      }, { skipNulls: true });
       const res = await fetch(`/api/aircraft?${query}`);
       if (!res.ok) throw new Error("Failed to fetch aircraft");
       return res.json();

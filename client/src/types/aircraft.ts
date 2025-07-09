@@ -27,6 +27,10 @@ export interface AircraftFilters {
   searchTerm?: string;
   type?: string;
   showFilters?: boolean;
+  sortBy?: 'proximity' | 'altitude' | 'destination' | 'origin' | 'latitude' | 'longitude';
+  sortOrder?: 'asc' | 'desc';
+  lat?: number;
+  lon?: number;
 }
 
 export interface DataSource {

@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import Header from '@/components/Header';
 import AircraftList from '@/components/AircraftList';
@@ -199,6 +198,15 @@ const Dashboard = () => {
     loadInitialData();
   }, [selectedARTCC, dataMode, generateARTCCSampleData]);
   
+  // Enhanced updateFilters to inject atcZoneId for proximity sort
+  const updateFiltersWithZone = (newFilters: Partial<typeof filters>) => {
+    if (newFilters.sortBy === 'proximity' || (newFilters.sortBy === undefined && filters.sortBy === 'proximity')) {
+      updateFilters({ ...newFilters, atcZoneId: selectedARTCC });
+    } else {
+      updateFilters({ ...newFilters, atcZoneId: undefined });
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <Header 
@@ -224,7 +232,7 @@ const Dashboard = () => {
               selectedAircraftId={selectedAircraft?.id}
               onSelectAircraft={handleSelectAircraft}
               filters={filters || { showFilters: false, searchTerm: '', verificationStatus: 'all', needsAssistance: false }}
-              onUpdateFilters={updateFilters}
+              onUpdateFilters={updateFiltersWithZone}
             />
           </div>
         </div>

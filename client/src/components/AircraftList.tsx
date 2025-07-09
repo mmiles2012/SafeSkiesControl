@@ -34,6 +34,18 @@ const AircraftList: React.FC<AircraftListProps> = ({
     });
   };
 
+  // Handle sort change
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    let sortBy: AircraftFilters['sortBy'] = undefined;
+    let sortOrder: AircraftFilters['sortOrder'] = 'asc';
+    if (value === 'proximity' || value === 'altitude' || value === 'destination' || value === 'origin' || value === 'latitude' || value === 'longitude') {
+      sortBy = value as AircraftFilters['sortBy'];
+    }
+    // Default: ascending, but allow user to select descending in future
+    onUpdateFilters({ sortBy, sortOrder });
+  };
+
   // Create a safe copy of the aircraft array with additional validation
   const safeAircraft = Array.isArray(aircraft) ? aircraft.filter(a => 
     a && typeof a === 'object' && 'id' in a && 'callsign' in a
@@ -95,6 +107,19 @@ const AircraftList: React.FC<AircraftListProps> = ({
         >
           Alerts
         </button>
+        <select
+          className="ml-auto px-2 py-1 rounded-md border border-border bg-background text-sm"
+          value={filters.sortBy || ''}
+          onChange={handleSortChange}
+        >
+          <option value="">Sort by...</option>
+          <option value="proximity">Proximity</option>
+          <option value="altitude">Altitude</option>
+          <option value="destination">Destination</option>
+          <option value="origin">Origin</option>
+          <option value="latitude">Latitude (N-S)</option>
+          <option value="longitude">Longitude (E-W)</option>
+        </select>
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 space-y-2 scrollbar scrollbar-w-2 scrollbar-thumb-rounded-lg scrollbar-thumb-accent scrollbar-track-muted/20">
