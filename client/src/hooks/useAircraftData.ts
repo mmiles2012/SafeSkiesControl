@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Aircraft, AircraftFilters } from "../types/aircraft";
 import { fetchAircraft, generateSampleAircraft } from "../lib/dataIntegration";
 import wsClient from "../lib/webSocket";
+import qs from "qs";
 
 export function useAircraftData() {
   const queryClient = useQueryClient();
@@ -16,11 +17,22 @@ export function useAircraftData() {
     searchTerm: "",
     type: undefined
   });
-  
-  // Fetch all aircraft
+
+  // Fetch aircraft with filters from backend
   const { data: aircraft = [], isLoading, error, refetch } = useQuery({
-    queryKey: ["/api/aircraft"],
-    refetchInterval: 10000, // Refetch every 10 seconds
+    queryKey: ["/api/aircraft", filters],
+    queryFn: async () => {
+      const query = qs.stringify({
+        verificationStatus: filters.verificationStatus,
+        needsAssistance: filters.needsAssistance,
+        searchTerm: filters.searchTerm,
+        type: filters.type
+      }, { skipNulls: true }); // removed skipEmptyString, not supported by qs
+      const res = await fetch(`/api/aircraft?${query}`);
+      if (!res.ok) throw new Error("Failed to fetch aircraft");
+      return res.json();
+    },
+    refetchInterval: 10000,
   });
   
   // Initialize WebSocket connection
@@ -121,49 +133,6 @@ export function useAircraftData() {
     }
   }, [generateARTCCSampleData, fetchLiveData]);
   
-  // Apply filters to aircraft data
-  const filteredAircraft = useCallback(() => {
-    if (!aircraft) return [];
-    
-    return aircraft.filter(ac => {
-      // Verification status filter
-      if (filters.verificationStatus && filters.verificationStatus !== "all") {
-        if (ac.verificationStatus !== filters.verificationStatus) {
-          return false;
-        }
-      }
-      
-      // Needs assistance filter
-      if (filters.needsAssistance !== undefined) {
-        if (ac.needsAssistance !== filters.needsAssistance) {
-          return false;
-        }
-      }
-      
-      // Search term filter
-      if (filters.searchTerm) {
-        const searchLower = filters.searchTerm.toLowerCase();
-        const callsignMatch = ac.callsign.toLowerCase().includes(searchLower);
-        const typeMatch = ac.aircraftType.toLowerCase().includes(searchLower);
-        const originMatch = ac.origin?.toLowerCase().includes(searchLower) || false;
-        const destMatch = ac.destination?.toLowerCase().includes(searchLower) || false;
-        
-        if (!(callsignMatch || typeMatch || originMatch || destMatch)) {
-          return false;
-        }
-      }
-      
-      // Aircraft type filter
-      if (filters.type) {
-        if (ac.aircraftType !== filters.type) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-  }, [aircraft, filters]);
-  
   // Select an aircraft
   const selectAircraft = useCallback((aircraft: Aircraft | null) => {
     setSelectedAircraft(aircraft);
@@ -179,7 +148,7 @@ export function useAircraftData() {
   
   return {
     aircraft,
-    filteredAircraft: filteredAircraft(),
+    filteredAircraft: aircraft, // for compatibility, but now backend-filtered
     isLoading,
     error,
     selectedAircraft,

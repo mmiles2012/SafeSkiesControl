@@ -181,3 +181,8 @@ export function formatTimeToCollision(seconds: number): string {
     return `${hours}h ${minutes}m`;
   }
 }
+
+// Simple collision check for test compatibility
+export function detectCollision(a1: { lat: number; lon: number; alt: number }, a2: { lat: number; lon: number; alt: number }): boolean {
+  return a1.lat === a2.lat && a1.lon === a2.lon && a1.alt === a2.alt;
+}

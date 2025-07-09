@@ -106,7 +106,13 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id };
+    const user: User = {
+      id,
+      username: insertUser.username,
+      password: insertUser.password,
+      displayName: insertUser.displayName,
+      role: insertUser.role ?? 'controller',
+    };
     this.users.set(id, user);
     return user;
   }
@@ -134,7 +140,23 @@ export class MemStorage implements IStorage {
   
   async createAircraft(insertAircraft: InsertAircraft): Promise<Aircraft> {
     const id = this.aircraftCurrentId++;
-    const aircraft: Aircraft = { ...insertAircraft, id };
+    const aircraft: Aircraft = {
+      id,
+      callsign: insertAircraft.callsign,
+      aircraftType: insertAircraft.aircraftType,
+      altitude: insertAircraft.altitude,
+      heading: insertAircraft.heading,
+      speed: insertAircraft.speed,
+      latitude: insertAircraft.latitude,
+      longitude: insertAircraft.longitude,
+      origin: insertAircraft.origin ?? null,
+      destination: insertAircraft.destination ?? null,
+      squawk: insertAircraft.squawk ?? null,
+      verificationStatus: insertAircraft.verificationStatus ?? 'unverified',
+      verifiedSources: insertAircraft.verifiedSources ?? [],
+      controllerSectorId: insertAircraft.controllerSectorId ?? null,
+      needsAssistance: insertAircraft.needsAssistance ?? false,
+    };
     this.aircraft.set(id, aircraft);
     return aircraft;
   }
@@ -169,7 +191,12 @@ export class MemStorage implements IStorage {
   
   async createSector(insertSector: InsertSector): Promise<Sector> {
     const id = this.sectorCurrentId++;
-    const sector: Sector = { ...insertSector, id };
+    const sector: Sector = {
+      id,
+      name: insertSector.name,
+      boundaries: insertSector.boundaries,
+      userId: insertSector.userId ?? null,
+    };
     this.sectors.set(id, sector);
     return sector;
   }
@@ -204,7 +231,16 @@ export class MemStorage implements IStorage {
   
   async createRestriction(insertRestriction: InsertRestriction): Promise<Restriction> {
     const id = this.restrictionCurrentId++;
-    const restriction: Restriction = { ...insertRestriction, id };
+    const restriction: Restriction = {
+      id,
+      name: insertRestriction.name,
+      type: insertRestriction.type,
+      boundaries: insertRestriction.boundaries,
+      altitude: insertRestriction.altitude,
+      startTime: insertRestriction.startTime ?? null,
+      endTime: insertRestriction.endTime ?? null,
+      active: insertRestriction.active ?? true,
+    };
     this.restrictions.set(id, restriction);
     return restriction;
   }
@@ -245,11 +281,17 @@ export class MemStorage implements IStorage {
   
   async createNotification(insertNotification: InsertNotification): Promise<Notification> {
     const id = this.notificationCurrentId++;
-    const notification: Notification = { 
-      ...insertNotification, 
-      id, 
+    const notification: Notification = {
+      id,
+      type: insertNotification.type,
+      title: insertNotification.title,
+      message: insertNotification.message,
+      aircraftIds: insertNotification.aircraftIds ?? null,
+      sectorId: insertNotification.sectorId ?? null,
+      priority: insertNotification.priority ?? 'normal',
+      status: insertNotification.status ?? 'pending',
       createdAt: new Date(),
-      resolvedAt: null 
+      resolvedAt: null,
     };
     this.notifications.set(id, notification);
     return notification;
@@ -289,10 +331,11 @@ export class MemStorage implements IStorage {
   
   async createDataSource(insertDataSource: InsertDataSource): Promise<DataSource> {
     const id = this.dataSourceCurrentId++;
-    const dataSource: DataSource = { 
-      ...insertDataSource, 
-      id, 
-      lastUpdated: new Date() 
+    const dataSource: DataSource = {
+      id,
+      name: insertDataSource.name,
+      status: insertDataSource.status ?? 'online',
+      lastUpdated: new Date(),
     };
     this.dataSources.set(id, dataSource);
     return dataSource;

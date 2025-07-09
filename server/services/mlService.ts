@@ -1,4 +1,4 @@
-import { InsertAircraft } from "@shared/schema";
+import { Aircraft, InsertAircraft } from "@shared/schema";
 import { storage } from "../storage";
 
 // MLService handles data correlation and verification
@@ -75,7 +75,7 @@ export class MLService {
   }
   
   // Check for potential collisions between aircraft
-  async detectPotentialCollisions(aircraft: InsertAircraft[]): Promise<{
+  async detectPotentialCollisions(aircraft: Aircraft[]): Promise<{
     collision: boolean;
     aircraftIds?: number[];
     timeToCollision?: number; // in seconds
@@ -117,7 +117,7 @@ export class MLService {
           // High severity collision risk
           collisions.push({
             collision: true,
-            aircraftIds: [ac1.id!, ac2.id!],
+            aircraftIds: [ac1.id, ac2.id],
             timeToCollision: Math.floor(distance * 60), // Rough estimate in seconds
             severity: "high"
           });
@@ -125,7 +125,7 @@ export class MLService {
           // Medium severity collision risk
           collisions.push({
             collision: true,
-            aircraftIds: [ac1.id!, ac2.id!],
+            aircraftIds: [ac1.id, ac2.id],
             timeToCollision: Math.floor(distance * 120),
             severity: "medium"
           });
@@ -133,7 +133,7 @@ export class MLService {
           // Low severity collision risk
           collisions.push({
             collision: true,
-            aircraftIds: [ac1.id!, ac2.id!],
+            aircraftIds: [ac1.id, ac2.id],
             timeToCollision: Math.floor(distance * 180),
             severity: "low"
           });
@@ -145,7 +145,7 @@ export class MLService {
   }
   
   // Check for airspace restriction violations
-  async detectAirspaceViolations(aircraft: InsertAircraft[]): Promise<{
+  async detectAirspaceViolations(aircraft: Aircraft[]): Promise<{
     violation: boolean;
     aircraftId: number;
     restrictionId: number;
@@ -175,8 +175,10 @@ export class MLService {
         );
         
         // Check if aircraft is within altitude limits
-        const inAltitude = ac.altitude >= restriction.altitude.min && 
-                          ac.altitude <= restriction.altitude.max;
+        const inAltitude =
+          typeof restriction.altitude === 'object' && restriction.altitude !== null && 'min' in restriction.altitude && 'max' in restriction.altitude
+            ? ac.altitude >= (restriction.altitude as any).min && ac.altitude <= (restriction.altitude as any).max
+            : false;
         
         if (inBoundaries && inAltitude) {
           violations.push({

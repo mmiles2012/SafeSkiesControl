@@ -46,10 +46,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aircraft endpoints
   // ------------------------
   
-  // Get all aircraft
+  // Get all aircraft (with optional filtering)
   router.get("/aircraft", async (req, res) => {
     try {
-      const aircraft = await aircraftService.getAllAircraft();
+      // Extract query parameters for filtering
+      const { verificationStatus, needsAssistance, searchTerm, type } = req.query;
+      const filters = {
+        verificationStatus: verificationStatus as string | undefined,
+        needsAssistance: needsAssistance !== undefined ? needsAssistance === 'true' : undefined,
+        searchTerm: searchTerm as string | undefined,
+        type: type as string | undefined
+      };
+      const aircraft = await aircraftService.getFilteredAircraft(filters);
       res.json(aircraft);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch aircraft" });

@@ -122,6 +122,40 @@ export class AircraftService {
     
     return results;
   }
+  
+  // Get aircraft with filtering
+  async getFilteredAircraft(filters: {
+    verificationStatus?: string;
+    needsAssistance?: boolean;
+    searchTerm?: string;
+    type?: string;
+  }): Promise<Aircraft[]> {
+    let aircraftList = await storage.getAllAircraft();
+    // Verification status filter
+    if (filters.verificationStatus && filters.verificationStatus !== "all") {
+      aircraftList = aircraftList.filter(ac => ac.verificationStatus === filters.verificationStatus);
+    }
+    // Needs assistance filter
+    if (filters.needsAssistance !== undefined) {
+      aircraftList = aircraftList.filter(ac => ac.needsAssistance === filters.needsAssistance);
+    }
+    // Search term filter
+    if (filters.searchTerm) {
+      const searchLower = filters.searchTerm.toLowerCase();
+      aircraftList = aircraftList.filter(ac => {
+        const callsignMatch = ac.callsign.toLowerCase().includes(searchLower);
+        const typeMatch = ac.aircraftType.toLowerCase().includes(searchLower);
+        const originMatch = ac.origin?.toLowerCase().includes(searchLower) || false;
+        const destMatch = ac.destination?.toLowerCase().includes(searchLower) || false;
+        return callsignMatch || typeMatch || originMatch || destMatch;
+      });
+    }
+    // Aircraft type filter
+    if (filters.type) {
+      aircraftList = aircraftList.filter(ac => ac.aircraftType === filters.type);
+    }
+    return aircraftList;
+  }
 }
 
 export const aircraftService = new AircraftService();
