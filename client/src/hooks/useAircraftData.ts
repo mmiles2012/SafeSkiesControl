@@ -34,13 +34,15 @@ export function useAircraftData() {
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
         lat: filters.lat,
-        lon: filters.lon
+        lon: filters.lon,
+        atcZoneId: filters.atcZoneId
       }, { skipNulls: true });
       const res = await fetch(`/api/aircraft?${query}`);
       if (!res.ok) throw new Error("Failed to fetch aircraft");
       return res.json();
     },
-    refetchInterval: 10000,
+    // Remove or set a very high refetchInterval to rely on WebSocket updates
+    refetchInterval: false,
   });
   
   // Initialize WebSocket connection
