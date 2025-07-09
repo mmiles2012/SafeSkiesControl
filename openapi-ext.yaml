@@ -22,7 +22,78 @@ paths:
                     type: string
                     example: ok
   /aircraft:
-    # ...existing aircraft endpoints (as before)...
+    get:
+      summary: Get all aircraft (with optional filtering, sorting, pagination, and response shaping)
+      parameters:
+        - in: query
+          name: verificationStatus
+          schema: { type: string }
+        - in: query
+          name: needsAssistance
+          schema: { type: boolean }
+        - in: query
+          name: searchTerm
+          schema: { type: string }
+        - in: query
+          name: type
+          schema: { type: string }
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: sortOrder
+          schema: { type: string, enum: [asc, desc] }
+        - in: query
+          name: lat
+          schema: { type: number }
+        - in: query
+          name: lon
+          schema: { type: number }
+        - in: query
+          name: atcZoneId
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
+      responses:
+        '200':
+          description: List of aircraft
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: '#/components/schemas/Aircraft'
+                    - type: object  # For shaped responses
+        '500':
+          description: Failed to fetch aircraft
+    post:
+      summary: Create a new aircraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Aircraft'
+      responses:
+        '201':
+          description: Created aircraft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aircraft'
+        '500':
+          description: Failed to create aircraft
   /aircraft/{id}:
     # ...existing aircraft endpoints (as before)...
   /aircraft/callsign/{callsign}:
@@ -46,12 +117,24 @@ paths:
           description: Failed to fetch aircraft
   /sectors/{id}/aircraft:
     get:
-      summary: Get aircraft in a sector
+      summary: Get aircraft in a sector (with optional pagination and response shaping)
       parameters:
         - in: path
           name: id
           required: true
           schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
       responses:
         '200':
           description: List of aircraft in sector
@@ -60,12 +143,27 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Aircraft'
+                  oneOf:
+                    - $ref: '#/components/schemas/Aircraft'
+                    - type: object
         '500':
           description: Failed to fetch aircraft in sector
   /notifications:
     get:
-      summary: Get all notifications
+      summary: Get all notifications (with optional pagination and response shaping)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
       responses:
         '200':
           description: List of notifications
@@ -74,7 +172,9 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Notification'
+                  oneOf:
+                    - $ref: '#/components/schemas/Notification'
+                    - type: object  # For shaped responses
         '500':
           description: Failed to fetch notifications
     post:
@@ -96,7 +196,20 @@ paths:
           description: Failed to create notification
   /notifications/pending:
     get:
-      summary: Get pending notifications
+      summary: Get pending notifications (with optional pagination and response shaping)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
       responses:
         '200':
           description: List of pending notifications
@@ -105,7 +218,9 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Notification'
+                  oneOf:
+                    - $ref: '#/components/schemas/Notification'
+                    - type: object
         '500':
           description: Failed to fetch pending notifications
   /notifications/{id}:
@@ -135,12 +250,24 @@ paths:
           description: Failed to update notification
   /sectors/{id}/notifications:
     get:
-      summary: Get notifications for a sector
+      summary: Get notifications for a sector (with optional pagination and response shaping)
       parameters:
         - in: path
           name: id
           required: true
           schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
       responses:
         '200':
           description: List of notifications for sector
@@ -149,7 +276,9 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Notification'
+                  oneOf:
+                    - $ref: '#/components/schemas/Notification'
+                    - type: object
         '500':
           description: Failed to fetch sector notifications
   /data-sources:
@@ -194,7 +323,7 @@ paths:
           description: Failed to sync FlightAware data
   /adsb/fetch-region:
     post:
-      summary: Fetch FlightAware data for a region
+      summary: Fetch FlightAware data for a region (with optional pagination and response shaping)
       requestBody:
         required: true
         content:
@@ -206,6 +335,19 @@ paths:
                 maxLat: { type: number }
                 minLon: { type: number }
                 maxLon: { type: number }
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
       responses:
         '200':
           description: List of flights in region
@@ -213,6 +355,13 @@ paths:
             application/json:
               schema:
                 type: object
+                properties:
+                  success: { type: boolean }
+                  count: { type: integer }
+                  flights:
+                    type: array
+                    items:
+                      type: object
         '500':
           description: Failed to fetch FlightAware data for region
   /sample-data/artcc:
@@ -240,7 +389,20 @@ paths:
           description: Failed to generate sample data
   /ml/detect-collisions:
     post:
-      summary: Run collision detection
+      summary: Run collision detection (with optional pagination and response shaping)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
       responses:
         '200':
           description: List of detected collisions
@@ -254,7 +416,20 @@ paths:
           description: Failed to detect collisions
   /ml/detect-airspace-violations:
     post:
-      summary: Detect airspace violations
+      summary: Detect airspace violations (with optional pagination and response shaping)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1 }
+          description: Max number of results to return
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+          description: Offset for pagination
+        - in: query
+          name: fields
+          schema: { type: string }
+          description: Comma-separated list of fields to include in response
       responses:
         '200':
           description: List of detected violations

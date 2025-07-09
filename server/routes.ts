@@ -52,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ------------------------
   
   /**
-   * @api {get} /api/aircraft Get all aircraft (with optional filtering/sorting)
+   * @api {get} /api/aircraft Get all aircraft (with optional filtering/sorting/pagination/fields)
    * @apiQuery {string} [verificationStatus] Filter by verification status
    * @apiQuery {boolean} [needsAssistance] Filter by assistance flag
    * @apiQuery {string} [searchTerm] Search by callsign/type/origin/destination
@@ -62,14 +62,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * @apiQuery {number} [lat] Latitude for proximity sort
    * @apiQuery {number} [lon] Longitude for proximity sort
    * @apiQuery {string} [atcZoneId] ARTCC/zone for proximity sort
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Aircraft[]} List of aircraft
    * @apiError 500 Failed to fetch aircraft
    */
-  // Get all aircraft (with optional filtering and sorting)
+  // Get all aircraft (with optional filtering, sorting, pagination, and response shaping)
   router.get("/aircraft", async (req, res) => {
     try {
-      // Extract query parameters for filtering and sorting
-      const { verificationStatus, needsAssistance, searchTerm, type, sortBy, sortOrder, lat, lon, atcZoneId } = req.query;
+      // Extract query parameters for filtering, sorting, pagination, and fields
+      const { verificationStatus, needsAssistance, searchTerm, type, sortBy, sortOrder, lat, lon, atcZoneId, limit, offset, fields } = req.query;
       const filters = {
         verificationStatus: verificationStatus as string | undefined,
         needsAssistance: needsAssistance !== undefined ? needsAssistance === 'true' : undefined,
@@ -81,7 +84,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lon: lon !== undefined ? parseFloat(lon as string) : undefined,
         atcZoneId: atcZoneId as string | undefined
       };
-      const aircraft = await aircraftService.getFilteredAircraft(filters);
+      let aircraft = await aircraftService.getFilteredAircraft(filters);
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      aircraft = aircraft.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        aircraft = aircraft.map(ac => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (ac.hasOwnProperty(field)) shaped[field] = (ac as any)[field];
+          }
+          return shaped;
+        });
+      }
       res.json(aircraft);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch aircraft" });
@@ -135,16 +153,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   /**
-   * @api {get} /api/sectors/:id/aircraft Get aircraft in a sector
+   * @api {get} /api/sectors/:id/aircraft Get aircraft in a sector (with optional pagination/fields)
    * @apiParam {Number} id Sector unique ID
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Aircraft[]} List of aircraft in sector
    * @apiError 500 Failed to fetch aircraft in sector
    */
-  // Get aircraft in a sector
+  // Get aircraft in a sector (with optional pagination and response shaping)
   router.get("/sectors/:id/aircraft", async (req, res) => {
     try {
       const sectorId = parseInt(req.params.id);
-      const aircraft = await aircraftService.getAircraftInSector(sectorId);
+      const { limit, offset, fields } = req.query;
+      let aircraft = await aircraftService.getAircraftInSector(sectorId);
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      aircraft = aircraft.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        aircraft = aircraft.map(ac => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (ac.hasOwnProperty(field)) shaped[field] = (ac as any)[field];
+          }
+          return shaped;
+        });
+      }
       res.json(aircraft);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch aircraft in sector" });
@@ -285,14 +322,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ------------------------
 
   /**
-   * @api {get} /api/notifications Get all notifications
+   * @api {get} /api/notifications Get all notifications (with optional pagination/fields)
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Notification[]} List of notifications
    * @apiError 500 Failed to fetch notifications
    */
-  // Get all notifications
+  // Get all notifications (with optional pagination and response shaping)
   router.get("/notifications", async (req, res) => {
     try {
-      const notifications = await notificationService.getAllNotifications();
+      const { limit, offset, fields } = req.query;
+      let notifications = await notificationService.getAllNotifications();
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      notifications = notifications.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        notifications = notifications.map(n => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (n.hasOwnProperty(field)) shaped[field] = (n as any)[field];
+          }
+          return shaped;
+        });
+      }
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notifications" });
@@ -300,14 +356,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   /**
-   * @api {get} /api/notifications/pending Get pending notifications
+   * @api {get} /api/notifications/pending Get pending notifications (with optional pagination/fields)
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Notification[]} List of pending notifications
    * @apiError 500 Failed to fetch pending notifications
    */
-  // Get pending notifications
+  // Get pending notifications (with optional pagination and response shaping)
   router.get("/notifications/pending", async (req, res) => {
     try {
-      const notifications = await notificationService.getPendingNotifications();
+      const { limit, offset, fields } = req.query;
+      let notifications = await notificationService.getPendingNotifications();
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      notifications = notifications.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        notifications = notifications.map(n => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (n.hasOwnProperty(field)) shaped[field] = (n as any)[field];
+          }
+          return shaped;
+        });
+      }
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch pending notifications" });
@@ -315,16 +390,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   /**
-   * @api {get} /api/sectors/:id/notifications Get notifications for a sector
+   * @api {get} /api/sectors/:id/notifications Get notifications for a sector (with optional pagination/fields)
    * @apiParam {Number} id Sector unique ID
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Notification[]} List of notifications for sector
    * @apiError 500 Failed to fetch sector notifications
    */
-  // Get notifications for a sector
+  // Get notifications for a sector (with optional pagination and response shaping)
   router.get("/sectors/:id/notifications", async (req, res) => {
     try {
       const sectorId = parseInt(req.params.id);
-      const notifications = await notificationService.getNotificationsBySector(sectorId);
+      const { limit, offset, fields } = req.query;
+      let notifications = await notificationService.getNotificationsBySector(sectorId);
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      notifications = notifications.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        notifications = notifications.map(n => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (n.hasOwnProperty(field)) shaped[field] = (n as any)[field];
+          }
+          return shaped;
+        });
+      }
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch sector notifications" });
@@ -488,33 +582,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   /**
-   * @api {post} /api/adsb/fetch-region Fetch FlightAware data for a region
+   * @api {post} /api/adsb/fetch-region Fetch FlightAware data for a region (with optional pagination/fields)
    * @apiBody {number} minLat
    * @apiBody {number} maxLat
    * @apiBody {number} minLon
    * @apiBody {number} maxLon
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Object} List of flights in region
    * @apiError 500 Failed to fetch FlightAware data for region
    */
-  // Fetch flight data from FlightAware for a specific region
+  // Fetch flight data from FlightAware for a specific region (with optional pagination and response shaping)
   router.post("/adsb/fetch-region", async (req, res) => {
     try {
       const { minLat, maxLat, minLon, maxLon } = req.body;
-      
+      const { limit, offset, fields } = req.query;
       if (!minLat || !maxLat || !minLon || !maxLon) {
         return res.status(400).json({ 
           error: "Missing coordinates",
           message: "Please provide minLat, maxLat, minLon, and maxLon coordinates"
         });
       }
-      
-      const flights = await flightawareService.fetchFlights({
+      let flights = await flightawareService.fetchFlights({
         minLat: parseFloat(minLat),
         maxLat: parseFloat(maxLat),
         minLon: parseFloat(minLon),
         maxLon: parseFloat(maxLon)
       });
-      
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      flights = flights.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        flights = flights.map(f => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (f.hasOwnProperty(field)) shaped[field] = (f as any)[field];
+          }
+          return shaped;
+        });
+      }
       res.json({
         success: true,
         count: flights.length,
@@ -578,16 +688,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ------------------------
   
   /**
-   * @api {post} /api/ml/detect-collisions Run collision detection
+   * @api {post} /api/ml/detect-collisions Run collision detection (with optional pagination/fields)
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Object[]} List of detected collisions
    * @apiError 500 Failed to detect collisions
    */
-  // Run collision detection
+  // Run collision detection (with optional pagination and response shaping)
   router.post("/ml/detect-collisions", async (req, res) => {
     try {
+      const { limit, offset, fields } = req.query;
       const aircraft = await aircraftService.getAllAircraft();
-      const collisions = await mlService.detectPotentialCollisions(aircraft);
-      
+      let collisions = await mlService.detectPotentialCollisions(aircraft);
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      collisions = collisions.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        collisions = collisions.map(c => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (c.hasOwnProperty(field)) shaped[field] = (c as any)[field];
+          }
+          return shaped;
+        });
+      }
       // Create notifications for high-severity collisions
       for (const collision of collisions) {
         if (collision.collision && collision.severity === "high") {
@@ -595,17 +723,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const involvedAircraft = await Promise.all(
             aircraftIds.map(id => aircraftService.getAircraft(id))
           );
-          
-          // Filter out undefined aircraft
           const validAircraft = involvedAircraft.filter(ac => ac !== undefined) as any;
-          
           if (validAircraft.length >= 2) {
             const notification = await notificationService.createCollisionNotification(
               validAircraft,
               collision.timeToCollision || 0,
               collision.severity || "high"
             );
-            
             websocketService.broadcastNotification(notification);
             websocketService.broadcastCollisionAlert(
               aircraftIds,
@@ -615,7 +739,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
       res.json(collisions);
     } catch (error) {
       res.status(500).json({ error: "Failed to detect collisions" });
@@ -623,29 +746,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   /**
-   * @api {post} /api/ml/detect-airspace-violations Detect airspace violations
+   * @api {post} /api/ml/detect-airspace-violations Detect airspace violations (with optional pagination/fields)
+   * @apiQuery {number} [limit] Max number of results (pagination)
+   * @apiQuery {number} [offset] Offset for pagination
+   * @apiQuery {string} [fields] Comma-separated list of fields to include in response
    * @apiSuccess {Object[]} List of detected violations
    * @apiError 500 Failed to detect airspace violations
    */
-  // Detect airspace violations
+  // Detect airspace violations (with optional pagination and response shaping)
   router.post("/ml/detect-airspace-violations", async (req, res) => {
     try {
+      const { limit, offset, fields } = req.query;
       const aircraft = await aircraftService.getAllAircraft();
-      const violations = await mlService.detectAirspaceViolations(aircraft);
-      
+      let violations = await mlService.detectAirspaceViolations(aircraft);
+      // Pagination
+      const start = offset ? parseInt(offset as string) : 0;
+      const end = limit ? start + parseInt(limit as string) : undefined;
+      violations = violations.slice(start, end);
+      // Response shaping
+      if (fields) {
+        const fieldList = (fields as string).split(',').map(f => f.trim());
+        violations = violations.map(v => {
+          const shaped: any = {};
+          for (const field of fieldList) {
+            if (v.hasOwnProperty(field)) shaped[field] = (v as any)[field];
+          }
+          return shaped;
+        });
+      }
       // Create notifications for violations
       for (const violation of violations) {
         if (violation.violation) {
           const aircraft = await aircraftService.getAircraft(violation.aircraftId);
           const restriction = await storage.getRestriction(violation.restrictionId);
-          
           if (aircraft && restriction) {
             const notification = await notificationService.createAirspaceNotification(
               aircraft,
               restriction.name,
               restriction.type
             );
-            
             websocketService.broadcastNotification(notification);
             websocketService.broadcastAirspaceAlert(
               violation.aircraftId,
@@ -655,7 +794,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
       res.json(violations);
     } catch (error) {
       res.status(500).json({ error: "Failed to detect airspace violations" });
