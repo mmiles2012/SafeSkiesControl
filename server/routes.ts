@@ -37,6 +37,11 @@ function validateSchema(schema: z.ZodType<any, any>) {
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = express.Router();
   
+  /**
+   * @api {get} /api/health Health check
+   * @apiDescription Returns API health status.
+   * @apiSuccess {Object} status Always 'ok'.
+   */
   // Health check endpoint
   router.get("/health", (req, res) => {
     res.json({ status: "ok" });
@@ -46,6 +51,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aircraft endpoints
   // ------------------------
   
+  /**
+   * @api {get} /api/aircraft Get all aircraft (with optional filtering/sorting)
+   * @apiQuery {string} [verificationStatus] Filter by verification status
+   * @apiQuery {boolean} [needsAssistance] Filter by assistance flag
+   * @apiQuery {string} [searchTerm] Search by callsign/type/origin/destination
+   * @apiQuery {string} [type] Filter by aircraft type
+   * @apiQuery {string} [sortBy] Sort by field (altitude, proximity, etc.)
+   * @apiQuery {string} [sortOrder] asc|desc
+   * @apiQuery {number} [lat] Latitude for proximity sort
+   * @apiQuery {number} [lon] Longitude for proximity sort
+   * @apiQuery {string} [atcZoneId] ARTCC/zone for proximity sort
+   * @apiSuccess {Aircraft[]} List of aircraft
+   * @apiError 500 Failed to fetch aircraft
+   */
   // Get all aircraft (with optional filtering and sorting)
   router.get("/aircraft", async (req, res) => {
     try {
@@ -69,6 +88,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {get} /api/aircraft/:id Get aircraft by ID
+   * @apiParam {Number} id Aircraft unique ID
+   * @apiSuccess {Aircraft} Aircraft object
+   * @apiError 404 Aircraft not found
+   * @apiError 500 Failed to fetch aircraft
+   */
   // Get aircraft by ID
   router.get("/aircraft/:id", async (req, res) => {
     try {
@@ -85,6 +111,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {get} /api/aircraft/callsign/:callsign Get aircraft by callsign
+   * @apiParam {String} callsign Aircraft callsign
+   * @apiSuccess {Aircraft} Aircraft object
+   * @apiError 404 Aircraft not found
+   * @apiError 500 Failed to fetch aircraft
+   */
   // Get aircraft by callsign
   router.get("/aircraft/callsign/:callsign", async (req, res) => {
     try {
@@ -101,6 +134,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {get} /api/sectors/:id/aircraft Get aircraft in a sector
+   * @apiParam {Number} id Sector unique ID
+   * @apiSuccess {Aircraft[]} List of aircraft in sector
+   * @apiError 500 Failed to fetch aircraft in sector
+   */
   // Get aircraft in a sector
   router.get("/sectors/:id/aircraft", async (req, res) => {
     try {
@@ -112,6 +151,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {post} /api/aircraft Create a new aircraft
+   * @apiBody {Aircraft} aircraft Aircraft data (validated)
+   * @apiSuccess {Aircraft} Created aircraft
+   * @apiError 500 Failed to create aircraft
+   */
   // Create a new aircraft
   router.post("/aircraft", validateSchema(insertAircraftSchema), async (req, res) => {
     try {
@@ -127,6 +172,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {patch} /api/aircraft/:id Update an aircraft
+   * @apiParam {Number} id Aircraft unique ID
+   * @apiBody {Partial<Aircraft>} updateData Fields to update
+   * @apiSuccess {Aircraft} Updated aircraft
+   * @apiError 404 Aircraft not found
+   * @apiError 500 Failed to update aircraft
+   */
   // Update an aircraft
   router.patch("/aircraft/:id", async (req, res) => {
     try {
@@ -148,6 +201,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {post} /api/aircraft/:id/assistance Flag an aircraft as needing assistance
+   * @apiParam {Number} id Aircraft unique ID
+   * @apiBody {Boolean} needsAssistance Assistance flag
+   * @apiSuccess {Aircraft} Updated aircraft
+   * @apiError 404 Aircraft not found
+   * @apiError 500 Failed to update assistance status
+   */
   // Flag an aircraft as needing assistance
   router.post("/aircraft/:id/assistance", async (req, res) => {
     try {
@@ -175,6 +236,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {delete} /api/aircraft/:id Delete an aircraft
+   * @apiParam {Number} id Aircraft unique ID
+   * @apiSuccess {Boolean} success
+   * @apiError 404 Aircraft not found
+   * @apiError 500 Failed to delete aircraft
+   */
   // Delete an aircraft
   router.delete("/aircraft/:id", async (req, res) => {
     try {
@@ -191,6 +259,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {post} /api/aircraft/generate-sample Generate sample aircraft
+   * @apiBody {Number} [count=10] Number of aircraft to generate
+   * @apiSuccess {Aircraft[]} List of generated aircraft
+   * @apiError 500 Failed to generate sample aircraft
+   */
   // Generate sample aircraft for testing
   router.post("/aircraft/generate-sample", async (req, res) => {
     try {
@@ -209,7 +283,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ------------------------
   // Notification endpoints
   // ------------------------
-  
+
+  /**
+   * @api {get} /api/notifications Get all notifications
+   * @apiSuccess {Notification[]} List of notifications
+   * @apiError 500 Failed to fetch notifications
+   */
   // Get all notifications
   router.get("/notifications", async (req, res) => {
     try {
@@ -220,6 +299,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {get} /api/notifications/pending Get pending notifications
+   * @apiSuccess {Notification[]} List of pending notifications
+   * @apiError 500 Failed to fetch pending notifications
+   */
   // Get pending notifications
   router.get("/notifications/pending", async (req, res) => {
     try {
@@ -230,6 +314,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {get} /api/sectors/:id/notifications Get notifications for a sector
+   * @apiParam {Number} id Sector unique ID
+   * @apiSuccess {Notification[]} List of notifications for sector
+   * @apiError 500 Failed to fetch sector notifications
+   */
   // Get notifications for a sector
   router.get("/sectors/:id/notifications", async (req, res) => {
     try {
@@ -241,6 +331,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {post} /api/notifications Create a notification
+   * @apiBody {Notification} notification Notification data (validated)
+   * @apiSuccess {Notification} Created notification
+   * @apiError 500 Failed to create notification
+   */
   // Create a notification
   router.post("/notifications", validateSchema(insertNotificationSchema), async (req, res) => {
     try {
@@ -256,6 +352,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {patch} /api/notifications/:id Update a notification
+   * @apiParam {Number} id Notification unique ID
+   * @apiBody {Partial<Notification>} updateData Fields to update
+   * @apiSuccess {Notification} Updated notification
+   * @apiError 404 Notification not found
+   * @apiError 500 Failed to update notification
+   */
   // Update a notification (e.g., mark as resolved)
   router.patch("/notifications/:id", async (req, res) => {
     try {
@@ -277,7 +381,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ------------------------
   // Data source endpoints
   // ------------------------
-  
+
+  /**
+   * @api {get} /api/data-sources Get all data sources
+   * @apiSuccess {DataSource[]} List of data sources
+   * @apiError 500 Failed to fetch data sources
+   */
   // Get all data sources
   router.get("/data-sources", async (req, res) => {
     try {
@@ -288,6 +397,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {get} /api/data-sources/check Check status of all data sources
+   * @apiSuccess {Object[]} List of data source check results
+   * @apiError 500 Failed to check data sources
+   */
   // Check status of all data sources
   router.get("/data-sources/check", async (req, res) => {
     try {
@@ -306,7 +420,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ------------------------
   // FlightAware ADS-B data endpoints
   // ------------------------
-  
+
+  /**
+   * @api {post} /api/adsb/sync Sync live flight data from FlightAware
+   * @apiSuccess {Object} Result of sync (success, message, aircraftCount, etc.)
+   * @apiError 500 Failed to sync FlightAware data
+   */
   // Fetch and sync live flight data from FlightAware
   router.post("/adsb/sync", async (req, res) => {
     try {
@@ -368,6 +487,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {post} /api/adsb/fetch-region Fetch FlightAware data for a region
+   * @apiBody {number} minLat
+   * @apiBody {number} maxLat
+   * @apiBody {number} minLon
+   * @apiBody {number} maxLon
+   * @apiSuccess {Object} List of flights in region
+   * @apiError 500 Failed to fetch FlightAware data for region
+   */
   // Fetch flight data from FlightAware for a specific region
   router.post("/adsb/fetch-region", async (req, res) => {
     try {
@@ -405,6 +533,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sample data generation endpoint
   // ------------------------
 
+  /**
+   * @api {post} /api/sample-data/artcc Generate sample aircraft for ARTCC regions
+   * @apiBody {string[]} artccIds Array of ARTCC identifiers
+   * @apiSuccess {Object} Result (success, message, count)
+   * @apiError 500 Failed to generate sample data
+   */
   // Generate sample aircraft for specific ARTCC regions
   router.post("/sample-data/artcc", async (req, res) => {
     try {
@@ -443,6 +577,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ML-related endpoints
   // ------------------------
   
+  /**
+   * @api {post} /api/ml/detect-collisions Run collision detection
+   * @apiSuccess {Object[]} List of detected collisions
+   * @apiError 500 Failed to detect collisions
+   */
   // Run collision detection
   router.post("/ml/detect-collisions", async (req, res) => {
     try {
@@ -483,6 +622,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * @api {post} /api/ml/detect-airspace-violations Detect airspace violations
+   * @apiSuccess {Object[]} List of detected violations
+   * @apiError 500 Failed to detect airspace violations
+   */
   // Detect airspace violations
   router.post("/ml/detect-airspace-violations", async (req, res) => {
     try {
@@ -518,7 +662,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ------------------------
   // ARTCC Boundary endpoints
+  // ------------------------
+
+  /**
+   * @api {get} /api/boundaries Get all ARTCC facility IDs
+   * @apiSuccess {string[]} facilityIds List of ARTCC facility IDs
+   * @apiError 500 Failed to fetch facility IDs
+   */
   router.get("/boundaries", async (req, res) => {
     try {
       const facilityIds = boundaryService.getAllFacilityIds();
@@ -528,6 +680,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @api {get} /api/boundaries/:facilityId Get ARTCC boundary data as GeoJSON
+   * @apiParam {string} facilityId ARTCC facility ID
+   * @apiSuccess {Object} GeoJSON boundary data
+   * @apiError 500 Failed to fetch boundary data
+   */
   router.get("/boundaries/:facilityId", async (req, res) => {
     try {
       const { facilityId } = req.params;
@@ -539,6 +697,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @api {get} /api/boundaries/kansas-city Get Kansas City ARTCC boundary (GeoJSON)
+   * @apiSuccess {Object} Kansas City ARTCC boundary as GeoJSON
+   * @apiError 500 Failed to fetch Kansas City boundary data
+   */
   router.get("/boundaries/kansas-city", async (req, res) => {
     try {
       // Define Kansas City ARTCC boundary with more precise coordinates
@@ -586,7 +749,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Generate Kansas City flights
+  /**
+   * @api {post} /api/kcflights/generate Generate sample flights in Kansas City ARTCC
+   * @apiQuery {number} [count=20] Number of aircraft to generate
+   * @apiSuccess {Object} Result (success, message)
+   * @apiError 500 Failed to generate Kansas City flights
+   */
   router.post("/kcflights/generate", async (req, res) => {
     try {
       const count = req.query.count ? parseInt(req.query.count as string) : 20;
@@ -601,6 +769,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         error: "Failed to generate Kansas City flights" 
       });
+    }
+  });
+
+  /**
+   * @api {get} /api/docs OpenAPI documentation
+   * @apiDescription Returns the OpenAPI YAML for this API.
+   * @apiSuccess {string} OpenAPI YAML
+   */
+  router.get("/docs", (req, res) => {
+    const fs = require("fs");
+    const path = require("path");
+    const openapiPath = path.join(process.cwd(), "openapi.yaml");
+    if (fs.existsSync(openapiPath)) {
+      res.type("text/yaml").send(fs.readFileSync(openapiPath, "utf-8"));
+    } else {
+      res.status(404).json({ error: "OpenAPI documentation not found" });
     }
   });
 

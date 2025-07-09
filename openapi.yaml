@@ -1,0 +1,185 @@
+openapi: 3.0.3
+info:
+  title: SafeSkiesControl API
+  version: 1.0.0
+  description: OpenAPI documentation for SafeSkiesControl Air Traffic Control System
+servers:
+  - url: /api
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns API health status.
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /aircraft:
+    get:
+      summary: Get all aircraft (with optional filtering/sorting)
+      parameters:
+        - in: query
+          name: verificationStatus
+          schema: { type: string }
+        - in: query
+          name: needsAssistance
+          schema: { type: boolean }
+        - in: query
+          name: searchTerm
+          schema: { type: string }
+        - in: query
+          name: type
+          schema: { type: string }
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: sortOrder
+          schema: { type: string, enum: [asc, desc] }
+        - in: query
+          name: lat
+          schema: { type: number }
+        - in: query
+          name: lon
+          schema: { type: number }
+        - in: query
+          name: atcZoneId
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of aircraft
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Aircraft'
+        '500':
+          description: Failed to fetch aircraft
+    post:
+      summary: Create a new aircraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Aircraft'
+      responses:
+        '201':
+          description: Created aircraft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aircraft'
+        '500':
+          description: Failed to create aircraft
+  /aircraft/{id}:
+    get:
+      summary: Get aircraft by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Aircraft object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aircraft'
+        '404':
+          description: Aircraft not found
+        '500':
+          description: Failed to fetch aircraft
+    patch:
+      summary: Update an aircraft
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Aircraft'
+      responses:
+        '200':
+          description: Updated aircraft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aircraft'
+        '404':
+          description: Aircraft not found
+        '500':
+          description: Failed to update aircraft
+    delete:
+      summary: Delete an aircraft
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Aircraft deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '404':
+          description: Aircraft not found
+        '500':
+          description: Failed to delete aircraft
+components:
+  schemas:
+    Aircraft:
+      type: object
+      properties:
+        id:
+          type: integer
+        callsign:
+          type: string
+        aircraftType:
+          type: string
+        altitude:
+          type: integer
+        heading:
+          type: integer
+        speed:
+          type: integer
+        latitude:
+          type: number
+        longitude:
+          type: number
+        origin:
+          type: string
+          nullable: true
+        destination:
+          type: string
+          nullable: true
+        squawk:
+          type: string
+        verificationStatus:
+          type: string
+        verifiedSources:
+          type: array
+          items:
+            type: string
+        controllerSectorId:
+          type: integer
+        needsAssistance:
+          type: boolean

@@ -1,0 +1,410 @@
+openapi: 3.0.3
+info:
+  title: SafeSkiesControl API
+  version: 1.0.0
+  description: OpenAPI documentation for SafeSkiesControl Air Traffic Control System
+servers:
+  - url: /api
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns API health status.
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /aircraft:
+    # ...existing aircraft endpoints (as before)...
+  /aircraft/{id}:
+    # ...existing aircraft endpoints (as before)...
+  /aircraft/callsign/{callsign}:
+    get:
+      summary: Get aircraft by callsign
+      parameters:
+        - in: path
+          name: callsign
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Aircraft object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aircraft'
+        '404':
+          description: Aircraft not found
+        '500':
+          description: Failed to fetch aircraft
+  /sectors/{id}/aircraft:
+    get:
+      summary: Get aircraft in a sector
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of aircraft in sector
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Aircraft'
+        '500':
+          description: Failed to fetch aircraft in sector
+  /notifications:
+    get:
+      summary: Get all notifications
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '500':
+          description: Failed to fetch notifications
+    post:
+      summary: Create a notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+      responses:
+        '201':
+          description: Created notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '500':
+          description: Failed to create notification
+  /notifications/pending:
+    get:
+      summary: Get pending notifications
+      responses:
+        '200':
+          description: List of pending notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '500':
+          description: Failed to fetch pending notifications
+  /notifications/{id}:
+    patch:
+      summary: Update a notification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+      responses:
+        '200':
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '404':
+          description: Notification not found
+        '500':
+          description: Failed to update notification
+  /sectors/{id}/notifications:
+    get:
+      summary: Get notifications for a sector
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of notifications for sector
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '500':
+          description: Failed to fetch sector notifications
+  /data-sources:
+    get:
+      summary: Get all data sources
+      responses:
+        '200':
+          description: List of data sources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataSource'
+        '500':
+          description: Failed to fetch data sources
+  /data-sources/check:
+    get:
+      summary: Check status of all data sources
+      responses:
+        '200':
+          description: List of data source check results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '500':
+          description: Failed to check data sources
+  /adsb/sync:
+    post:
+      summary: Sync live flight data from FlightAware
+      responses:
+        '200':
+          description: Result of sync
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Failed to sync FlightAware data
+  /adsb/fetch-region:
+    post:
+      summary: Fetch FlightAware data for a region
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                minLat: { type: number }
+                maxLat: { type: number }
+                minLon: { type: number }
+                maxLon: { type: number }
+      responses:
+        '200':
+          description: List of flights in region
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Failed to fetch FlightAware data for region
+  /sample-data/artcc:
+    post:
+      summary: Generate sample aircraft for ARTCC regions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                artccIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Result (success, message, count)
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Failed to generate sample data
+  /ml/detect-collisions:
+    post:
+      summary: Run collision detection
+      responses:
+        '200':
+          description: List of detected collisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '500':
+          description: Failed to detect collisions
+  /ml/detect-airspace-violations:
+    post:
+      summary: Detect airspace violations
+      responses:
+        '200':
+          description: List of detected violations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '500':
+          description: Failed to detect airspace violations
+  /boundaries:
+    get:
+      summary: Get all ARTCC facility IDs
+      responses:
+        '200':
+          description: List of ARTCC facility IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  facilityIds:
+                    type: array
+                    items:
+                      type: string
+        '500':
+          description: Failed to fetch facility IDs
+  /boundaries/{facilityId}:
+    get:
+      summary: Get ARTCC boundary data as GeoJSON
+      parameters:
+        - in: path
+          name: facilityId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: GeoJSON boundary data
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Failed to fetch boundary data
+  /boundaries/kansas-city:
+    get:
+      summary: Get Kansas City ARTCC boundary (GeoJSON)
+      responses:
+        '200':
+          description: Kansas City ARTCC boundary as GeoJSON
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Failed to fetch Kansas City boundary data
+  /kcflights/generate:
+    post:
+      summary: Generate sample flights in Kansas City ARTCC
+      parameters:
+        - in: query
+          name: count
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Result (success, message)
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Failed to generate Kansas City flights
+  /docs:
+    get:
+      summary: OpenAPI documentation
+      description: Returns the OpenAPI YAML for this API.
+      responses:
+        '200':
+          description: OpenAPI YAML
+          content:
+            text/yaml:
+              schema:
+                type: string
+        '404':
+          description: OpenAPI documentation not found
+components:
+  schemas:
+    Aircraft:
+      type: object
+      properties:
+        id:
+          type: integer
+        callsign:
+          type: string
+        aircraftType:
+          type: string
+        altitude:
+          type: integer
+        heading:
+          type: integer
+        speed:
+          type: integer
+        latitude:
+          type: number
+        longitude:
+          type: number
+        origin:
+          type: string
+          nullable: true
+        destination:
+          type: string
+          nullable: true
+        squawk:
+          type: string
+        verificationStatus:
+          type: string
+        verifiedSources:
+          type: array
+          items:
+            type: string
+        controllerSectorId:
+          type: integer
+        needsAssistance:
+          type: boolean
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        message:
+          type: string
+        priority:
+          type: string
+        status:
+          type: string
+        aircraftId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    DataSource:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+        lastUpdated:
+          type: string
+          format: date-time
